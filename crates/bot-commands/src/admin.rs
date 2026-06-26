@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use poise::CreateReply;
 
 use crate::{Context, Error};
@@ -9,15 +11,43 @@ pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Check if the bot is responsive
+/// Check if the bot is responsive (Discord + Proxmox latency)
 #[poise::command(slash_command)]
 pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
-    let latency = ctx.ping().await;
-    ctx.send(
-        CreateReply::default()
-            .content(format!("Pong! Latency: {}ms", latency.as_millis()))
-            .ephemeral(true),
-    )
-    .await?;
+    ctx.defer_ephemeral().await?;
+
+    let discord_latency = ctx.ping().await;
+
+    let proxmox_start = Instant::now();
+    let proxmox_result = ctx.data().proxmox.version().await;
+    let proxmox_ms = proxmox_start.elapsed().as_millis();
+
+    let content = match proxmox_result {
+        Ok(ver) => {
+            format!(
+                "**Pong!** — {} (PVE {})\n\
+                 ─────────────────────\n\
+                 🟢 Discord WS · `{}ms`\n\
+                 🟢 Proxmox API · `{}ms`",
+                ctx.data().proxmox_url,
+                ver.version,
+                discord_latency.as_millis(),
+                proxmox_ms,
+            )
+        }
+        Err(e) => {
+            format!(
+                "**Pong!**\n\
+                 ─────────────────────\n\
+                 🟢 Discord WS · `{discord}ms`\n\
+                 🔴 Proxmox API · `{proxmox}ms` (error: {e})",
+                discord = discord_latency.as_millis(),
+                proxmox = proxmox_ms,
+            )
+        }
+    };
+
+    ctx.send(CreateReply::default().content(content).ephemeral(true))
+        .await?;
     Ok(())
 }

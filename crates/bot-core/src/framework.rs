@@ -86,15 +86,28 @@ async fn on_error<Data: Send + Sync>(error: poise::FrameworkError<'_, Data, Erro
         }
         poise::FrameworkError::Command { error, ctx, .. } => {
             tracing::error!("Command `{}` failed: {error}", ctx.command().name);
-            let msg = format!("An error occurred: {error}");
-            if let Err(e) = ctx.say(msg).await {
-                tracing::error!("Failed to send error message: {e}");
+
+            let embed = poise::serenity_prelude::CreateEmbed::new()
+                .title("Command Error")
+                .description(format!("**Command:** `{}`\n```\n{error}\n```", ctx.command().name))
+                .color(0xe74c3c);
+
+            let reply = poise::CreateReply::default().embed(embed).ephemeral(true);
+            if let Err(e) = ctx.send(reply).await {
+                tracing::error!("Failed to send error embed: {e}");
             }
         }
         poise::FrameworkError::ArgumentParse { error, ctx, .. } => {
             tracing::warn!("Argument parse error: {error}");
-            if let Err(e) = ctx.say(format!("Invalid argument: {error}")).await {
-                tracing::error!("Failed to send error message: {e}");
+
+            let embed = poise::serenity_prelude::CreateEmbed::new()
+                .title("Invalid Argument")
+                .description(format!("```\n{error}\n```"))
+                .color(0xf39c12);
+
+            let reply = poise::CreateReply::default().embed(embed).ephemeral(true);
+            if let Err(e) = ctx.send(reply).await {
+                tracing::error!("Failed to send error embed: {e}");
             }
         }
         poise::FrameworkError::MissingBotPermissions {
@@ -102,9 +115,35 @@ async fn on_error<Data: Send + Sync>(error: poise::FrameworkError<'_, Data, Erro
             ctx,
             ..
         } => {
-            let msg = format!("I need the `{missing_permissions}` permission to do that.");
-            if let Err(e) = ctx.say(msg).await {
-                tracing::error!("Failed to send error message: {e}");
+            let embed = poise::serenity_prelude::CreateEmbed::new()
+                .title("Missing Permissions")
+                .description(format!("I need the `{missing_permissions}` permission to do that."))
+                .color(0xe67e22);
+
+            let reply = poise::CreateReply::default().embed(embed).ephemeral(true);
+            if let Err(e) = ctx.send(reply).await {
+                tracing::error!("Failed to send error embed: {e}");
+            }
+        }
+        poise::FrameworkError::MissingUserPermissions {
+            missing_permissions,
+            ctx,
+            ..
+        } => {
+            let embed = poise::serenity_prelude::CreateEmbed::new()
+                .title("Access Denied")
+                .description(format!(
+                    "You need the `{}` permission to use this command.",
+                    match &missing_permissions {
+                        Some(p) => format!("{p}"),
+                        None => "some".into(),
+                    }
+                ))
+                .color(0xe74c3c);
+
+            let reply = poise::CreateReply::default().embed(embed).ephemeral(true);
+            if let Err(e) = ctx.send(reply).await {
+                tracing::error!("Failed to send error embed: {e}");
             }
         }
         error => {

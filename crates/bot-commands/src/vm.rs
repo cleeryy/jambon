@@ -136,6 +136,7 @@ pub async fn start(
     #[description = "Node name"] node: String,
     #[description = "VM ID"] vmid: u64,
 ) -> Result<(), Error> {
+    crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_start(&node, vmid).await?;
     ctx.say(format!("✅ VM {vmid} is starting (task: {}).", task.data))
@@ -150,6 +151,7 @@ pub async fn stop(
     #[description = "Node name"] node: String,
     #[description = "VM ID"] vmid: u64,
 ) -> Result<(), Error> {
+    crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_stop(&node, vmid).await?;
     ctx.say(format!("⏹️ VM {vmid} stop requested (task: {}).", task.data))
@@ -165,6 +167,7 @@ pub async fn shutdown(
     #[description = "VM ID"] vmid: u64,
     #[description = "Timeout in seconds before force-stop"] timeout: Option<u64>,
 ) -> Result<(), Error> {
+    crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_shutdown(&node, vmid, timeout).await?;
     ctx.say(format!("⏳ VM {vmid} shutdown requested (task: {}).", task.data))
@@ -180,6 +183,7 @@ pub async fn migrate(
     #[description = "VM ID"] vmid: u64,
     #[description = "Target node name"] target: String,
 ) -> Result<(), Error> {
+    crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_migrate(&node, vmid, &target).await?;
     ctx.say(format!(
