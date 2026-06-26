@@ -229,6 +229,20 @@ pub struct VmStartOptions {
 }
 
 #[derive(Debug, Serialize)]
+pub struct BackupCreateOptions {
+    /// VM ID(s) — single ID or comma-separated list.
+    pub vmid: String,
+    /// Target storage pool.
+    pub storage: String,
+    /// Backup mode: snapshot (default), suspend, or stop.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<String>,
+    /// Compression: lzo, gzip, or zstd (default).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub compress: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct VmShutdownOptions {
     pub node: String,
     pub vmid: u64,
