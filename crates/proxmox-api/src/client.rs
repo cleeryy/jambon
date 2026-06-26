@@ -274,31 +274,8 @@ impl ProxmoxClient {
 
     // ── Backup ───────────────────────────────────────────────────────
 
-    /// List all configured backup jobs on the cluster.
     pub async fn list_backups(&self) -> Result<Vec<BackupJob>, Error> {
         self.get("cluster/backup").await
-    }
-
-    /// Create a backup for one or more VMs on the given node.
-    ///
-    /// `vmid` can be a single VM ID or a comma-separated list.
-    /// `mode` defaults to `snapshot` if `None`, otherwise `suspend` | `stop`.
-    /// `compress` defaults to `zstd` if `None`, otherwise `lzo` | `gzip` | `zstd`.
-    pub async fn create_backup(
-        &self,
-        node: &str,
-        vmid: &str,
-        storage: &str,
-        mode: Option<&str>,
-        compress: Option<&str>,
-    ) -> Result<TaskResponse, Error> {
-        let opts = BackupCreateOptions {
-            vmid: vmid.to_string(),
-            storage: storage.to_string(),
-            mode: mode.map(|m| m.to_string()),
-            compress: compress.map(|c| c.to_string()),
-        };
-        self.post(&format!("nodes/{node}/vzdump"), opts).await
     }
 
     // ── Task tracking ─────────────────────────────────────────────────
