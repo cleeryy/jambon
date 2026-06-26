@@ -62,7 +62,7 @@ jobs:
         with:
           tool: cargo-nextest
       - name: Run tests
-        run: cargo nextest run --workspace --all-features --no-tests passed
+        run: cargo nextest run --workspace --all-features --no-tests pass
       - name: Run doc tests
         run: cargo test --doc --workspace --all-features
 
