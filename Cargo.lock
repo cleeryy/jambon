@@ -880,8 +880,10 @@ dependencies = [
 name = "jambon-bot-commands"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "jambon-proxmox-api",
  "poise",
+ "serde_json",
  "serenity",
  "tracing",
 ]

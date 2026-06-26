@@ -17,7 +17,8 @@ fn audit_entry(user: &str, command: &str, details: String) -> AuditEntry {
 #[poise::command(
     slash_command,
     subcommands(
-        "list", "status", "start", "stop", "shutdown", "migrate", "create", "delete", "resize", "snapshot", "clone"
+        "list", "status", "start", "stop", "shutdown", "migrate", "create", "delete", "resize", "snapshot", "clone",
+        "agent"
     ),
     subcommand_required,
     default_member_permissions = "ADMINISTRATOR",
@@ -559,6 +560,148 @@ pub async fn clone(
     Ok(())
 }
 
+/// Interact with the QEMU guest agent on a VM
+#[poise::command(
+    slash_command,
+    subcommands("agent_info", "agent_network", "agent_exec"),
+    subcommand_required
+)]
+pub async fn agent(_ctx: Context<'_>) -> Result<(), Error> {
+    unreachable!("agent subcommand_required is set")
+}
+
+/// Show guest agent info (hostname, OS, version)
+#[poise::command(slash_command, rename = "info")]
+pub async fn agent_info(
+    ctx: Context<'_>,
+    #[description = "Node name"] node: String,
+    #[description = "VM ID"] vmid: u64,
+) -> Result<(), Error> {
+    ctx.defer().await?;
+
+    let info = ctx.data().proxmox.vm_agent_info(&node, vmid).await?;
+
+    let embed = serenity::CreateEmbed::new()
+        .title(format!("QEMU Agent Info for VM {vmid}"))
+        .field("Version", info.version.as_deref().unwrap_or("unknown"), true)
+        .field(
+            "Supported",
+            if info.supported.unwrap_or(false) {
+                "\u{2705}"
+            } else {
+                "\u{274c}"
+            },
+            true,
+        )
+        .field("Command", info.command.as_deref().unwrap_or("unknown"), true)
+        .color(crate::colors::COLOR_INFO);
+
+    ctx.send(CreateReply::default().embed(embed)).await?;
+    Ok(())
+}
+
+/// Show guest network interfaces
+#[poise::command(slash_command, rename = "network")]
+pub async fn agent_network(
+    ctx: Context<'_>,
+    #[description = "Node name"] node: String,
+    #[description = "VM ID"] vmid: u64,
+) -> Result<(), Error> {
+    ctx.defer().await?;
+
+    let interfaces = ctx.data().proxmox.vm_agent_network(&node, vmid).await?;
+
+    let mut desc = String::new();
+    for iface in &interfaces {
+        let addrs: Vec<String> = iface
+            .ip_addresses
+            .as_ref()
+            .map(|ips| ips.iter().filter_map(|ip| ip.ip_address.clone()).collect())
+            .unwrap_or_default();
+        desc.push_str(&format!(
+            "**{name}** ({mac})\n  IPs: {ips}\n",
+            name = iface.name.as_deref().unwrap_or("?"),
+            mac = iface.hardware_address.as_deref().unwrap_or("?"),
+            ips = if addrs.is_empty() {
+                "none".into()
+            } else {
+                addrs.join(", ")
+            },
+        ));
+    }
+
+    if desc.is_empty() {
+        desc = "No network interfaces reported.".into();
+    }
+
+    let embed = serenity::CreateEmbed::new()
+        .title(format!("Guest Network Interfaces for VM {vmid}"))
+        .description(desc)
+        .color(crate::colors::COLOR_INFO);
+
+    ctx.send(CreateReply::default().embed(embed)).await?;
+    Ok(())
+}
+
+/// Execute a command on the guest via QEMU agent
+#[poise::command(slash_command, rename = "exec")]
+pub async fn agent_exec(
+    ctx: Context<'_>,
+    #[description = "Node name"] node: String,
+    #[description = "VM ID"] vmid: u64,
+    #[description = "Command to execute"] command: String,
+) -> Result<(), Error> {
+    crate::permissions::require_destructive(ctx).await?;
+    ctx.defer().await?;
+
+    let parts: Vec<String> = command.split_whitespace().map(|s| s.to_string()).collect();
+    let opts = jambon_proxmox_api::AgentExecOptions { command: parts };
+    let result = ctx.data().proxmox.vm_agent_exec(&node, vmid, &opts).await?;
+
+    ctx.data().audit_log.push(crate::audit::AuditEntry {
+        timestamp: std::time::SystemTime::now(),
+        user: ctx.author().name.clone(),
+        command: "vm agent exec".to_string(),
+        details: format!("VM {vmid} on {node}: '{command}'"),
+    });
+
+    let stdout = result.out_data.as_deref().unwrap_or("");
+    let stderr = result.err_data.as_deref().unwrap_or("");
+    let exit_code = result.exit_code.unwrap_or(-1);
+
+    let mut desc = String::new();
+    if !stdout.is_empty() {
+        let truncated = if result.out_truncated.unwrap_or(false) {
+            " (truncated)"
+        } else {
+            ""
+        };
+        desc.push_str(&format!("**stdout**{truncated}:\n```\n{stdout}\n```\n"));
+    }
+    if !stderr.is_empty() {
+        let truncated = if result.err_truncated.unwrap_or(false) {
+            " (truncated)"
+        } else {
+            ""
+        };
+        desc.push_str(&format!("**stderr**{truncated}:\n```\n{stderr}\n```\n"));
+    }
+    if stdout.is_empty() && stderr.is_empty() {
+        desc = "Command produced no output.".into();
+    }
+
+    let embed = serenity::CreateEmbed::new()
+        .title(format!("Guest Exec on VM {vmid}"))
+        .field("Command", &command, false)
+        .field("PID", result.pid.map_or("?".into(), |p| p.to_string()), true)
+        .field("Exit Code", exit_code.to_string(), true)
+        .field("Output", desc, false)
+        .color(crate::colors::COLOR_SUCCESS);
+
+    ctx.send(CreateReply::default().embed(embed)).await?;
+    Ok(())
+}
+
 fn format_uptime(secs: u64) -> String {
     let days = secs / 86400;
     let hours = (secs % 86400) / 3600;
@@ -569,5 +712,41 @@ fn format_uptime(secs: u64) -> String {
         format!("{hours}h {minutes}m")
     } else {
         format!("{minutes}m")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_uptime_days() {
+        assert_eq!(format_uptime(90061), "1d 1h 1m");
+    }
+
+    #[test]
+    fn test_format_uptime_hours_only() {
+        assert_eq!(format_uptime(3660), "1h 1m");
+    }
+
+    #[test]
+    fn test_format_uptime_minutes_only() {
+        assert_eq!(format_uptime(60), "1m");
+    }
+
+    #[test]
+    fn test_format_uptime_seconds_rounded_down() {
+        assert_eq!(format_uptime(59), "0m");
+        assert_eq!(format_uptime(0), "0m");
+    }
+
+    #[test]
+    fn test_format_uptime_exact_day() {
+        assert_eq!(format_uptime(86400), "1d 0h 0m");
+    }
+
+    #[test]
+    fn test_format_uptime_mixed_values() {
+        assert_eq!(format_uptime(100000), "1d 3h 46m");
     }
 }
