@@ -3,14 +3,18 @@
 //! Commands are grouped by domain: Proxmox VM operations, node operations,
 //! cluster operations, and administrative commands.
 
+pub mod acl;
 pub mod admin;
 pub mod audit;
 pub mod backup;
 pub mod cluster;
 pub mod colors;
+pub mod container;
+pub mod firewall;
 pub mod r#mod;
 pub mod node;
 pub mod permissions;
+pub mod pool;
 pub mod storage;
 pub mod vm;
 
@@ -38,6 +42,10 @@ pub fn all_commands() -> Vec<poise::Command<Data, Error>> {
         node::node(),
         cluster::cluster(),
         storage::storage(),
+        container::container(),
+        pool::pool(),
+        acl::acl(),
+        firewall::fw(),
         backup::backup(),
         audit::audit(),
         r#mod::r#mod(),

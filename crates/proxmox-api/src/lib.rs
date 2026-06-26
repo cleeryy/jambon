@@ -12,7 +12,10 @@ pub mod resources;
 pub use client::ProxmoxClient;
 pub use error::Error;
 pub use models::{
-    ApiResponse, BackupJob, ClusterResource, LxcSummary, NodeStatus, NodeSummary, SnapshotCreateOptions,
-    SnapshotListItem, StorageContent, StorageSummary, TaskResponse, TaskStatus, VersionInfo, VmCloneOptions, VmConfig,
-    VmCreateOptions, VmResizeDiskOptions, VmShutdownOptions, VmStatus, VmSummary,
+    AclEntry, AclUpdateOptions, AgentExecOptions, AgentExecResult, AgentInfo, AgentIpAddress, AgentNetworkInterface,
+    ApiResponse, BackupJob, ClusterResource, FwLogEntry, FwRule, FwRuleOptions, LxcCloneOptions, LxcCreateOptions,
+    LxcResizeOptions, LxcStatus, LxcSummary, NodeStatus, NodeSummary, PoolCreateOptions, PoolDetail, PoolMember,
+    PoolSummary, SnapshotCreateOptions, SnapshotListItem, StorageContent, StorageSummary, TaskResponse, TaskStatus,
+    UserCreateOptions, UserSummary, VersionInfo, VmCloneOptions, VmConfig, VmCreateOptions, VmResizeDiskOptions,
+    VmShutdownOptions, VmStatus, VmSummary,
 };
