@@ -4,6 +4,7 @@
 //! cluster operations, and administrative commands.
 
 pub mod admin;
+pub mod audit;
 pub mod backup;
 pub mod cluster;
 pub mod r#mod;
@@ -11,6 +12,8 @@ pub mod node;
 pub mod permissions;
 pub mod storage;
 pub mod vm;
+
+pub use audit::AuditLog;
 
 /// Shared error type for all command handlers.
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -24,6 +27,7 @@ pub struct Data {
     pub alert_channel_id: Option<u64>,
     pub monitor_interval_secs: u64,
     pub proxmox_url: String,
+    pub audit_log: AuditLog,
 }
 
 /// Collect all commands into a single flat Vec for the framework.
@@ -34,6 +38,7 @@ pub fn all_commands() -> Vec<poise::Command<Data, Error>> {
         cluster::cluster(),
         storage::storage(),
         backup::backup(),
+        audit::audit(),
         r#mod::r#mod(),
         admin::register(),
         admin::ping(),

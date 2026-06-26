@@ -70,6 +70,13 @@ pub async fn create(
         .create_backup(&node, &vmid, &storage, mode.as_deref(), compress.as_deref())
         .await?;
 
+    ctx.data().audit_log.push(crate::audit::AuditEntry {
+        timestamp: std::time::SystemTime::now(),
+        user: ctx.author().name.clone(),
+        command: "backup create".to_string(),
+        details: format!("VM(s) {vmid} on {node} → {storage}"),
+    });
+
     let embed = serenity::CreateEmbed::new()
         .title("Backup Started")
         .description(format!(

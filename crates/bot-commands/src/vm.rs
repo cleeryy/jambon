@@ -1,7 +1,17 @@
 use poise::serenity_prelude as serenity;
 use poise::CreateReply;
 
+use crate::audit::AuditEntry;
 use crate::{Context, Error};
+
+fn audit_entry(user: &str, command: &str, details: String) -> AuditEntry {
+    AuditEntry {
+        timestamp: std::time::SystemTime::now(),
+        user: user.to_string(),
+        command: command.to_string(),
+        details,
+    }
+}
 
 /// Manage Proxmox VE virtual machines
 #[poise::command(
@@ -139,6 +149,12 @@ pub async fn start(
     crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_start(&node, vmid).await?;
+    let entry = audit_entry(
+        ctx.author().name.as_ref(),
+        "vm start",
+        format!("VM {vmid} on {node} (task: {})", task.data),
+    );
+    ctx.data().audit_log.push(entry);
     ctx.say(format!("✅ VM {vmid} is starting (task: {}).", task.data))
         .await?;
     Ok(())
@@ -154,6 +170,11 @@ pub async fn stop(
     crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_stop(&node, vmid).await?;
+    ctx.data().audit_log.push(audit_entry(
+        ctx.author().name.as_ref(),
+        "vm stop",
+        format!("VM {vmid} on {node} (task: {})", task.data),
+    ));
     ctx.say(format!("⏹️ VM {vmid} stop requested (task: {}).", task.data))
         .await?;
     Ok(())
@@ -170,6 +191,12 @@ pub async fn shutdown(
     crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_shutdown(&node, vmid, timeout).await?;
+    let entry = audit_entry(
+        ctx.author().name.as_ref(),
+        "vm shutdown",
+        format!("VM {vmid} on {node} (task: {})", task.data),
+    );
+    ctx.data().audit_log.push(entry);
     ctx.say(format!("⏳ VM {vmid} shutdown requested (task: {}).", task.data))
         .await?;
     Ok(())
@@ -186,6 +213,12 @@ pub async fn migrate(
     crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
     let task = ctx.data().proxmox.vm_migrate(&node, vmid, &target).await?;
+    let entry = audit_entry(
+        ctx.author().name.as_ref(),
+        "vm migrate",
+        format!("VM {vmid} from {node} to {target} (task: {})", task.data),
+    );
+    ctx.data().audit_log.push(entry);
     ctx.say(format!(
         "🔄 VM {vmid} migrating from {node} to {target} (task: {}).",
         task.data
