@@ -193,6 +193,27 @@ impl ProxmoxClient {
         self.get(&format!("nodes/{node}/status")).await
     }
 
+    async fn put<T: serde::de::DeserializeOwned>(&self, path: &str, body: impl serde::Serialize) -> Result<T, Error> {
+        let resp = self
+            .http
+            .put(self.url(path))
+            .header(AUTHORIZATION, self.auth_header.clone())
+            .json(&body)
+            .send()
+            .await?;
+        Self::handle_response(resp).await
+    }
+
+    async fn delete<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
+        let resp = self
+            .http
+            .delete(self.url(path))
+            .header(AUTHORIZATION, self.auth_header.clone())
+            .send()
+            .await?;
+        Self::handle_response(resp).await
+    }
+
     // ── VMs (QEMU) ───────────────────────────────────────────────────
 
     pub async fn list_vms(&self, node: &str) -> Result<Vec<VmSummary>, Error> {
@@ -234,6 +255,79 @@ impl ProxmoxClient {
             online: Some(1),
         };
         self.post(&format!("nodes/{node}/qemu/{vmid}/migrate"), opts).await
+    }
+
+    // ── VM Lifecycle ─────────────────────────────────────────────────
+
+    /// Create a VM (from scratch or from a template).
+    /// POST /nodes/{node}/qemu
+    pub async fn vm_create(&self, node: &str, opts: &VmCreateOptions) -> Result<TaskResponse, Error> {
+        self.post(&format!("nodes/{node}/qemu"), opts).await
+    }
+
+    /// Delete a VM.
+    /// DELETE /nodes/{node}/qemu/{vmid}
+    pub async fn vm_delete(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
+        self.delete(&format!("nodes/{node}/qemu/{vmid}")).await
+    }
+
+    /// Clone a VM.
+    /// POST /nodes/{node}/qemu/{vmid}/clone
+    pub async fn vm_clone(&self, node: &str, vmid: u64, opts: &VmCloneOptions) -> Result<TaskResponse, Error> {
+        self.post(&format!("nodes/{node}/qemu/{vmid}/clone"), opts).await
+    }
+
+    /// Resize a VM disk.
+    /// PUT /nodes/{node}/qemu/{vmid}/resize
+    pub async fn vm_resize_disk(
+        &self,
+        node: &str,
+        vmid: u64,
+        opts: &VmResizeDiskOptions,
+    ) -> Result<TaskResponse, Error> {
+        self.put(&format!("nodes/{node}/qemu/{vmid}/resize"), opts).await
+    }
+
+    /// Update VM configuration (CPU cores, memory, etc.).
+    /// PUT /nodes/{node}/qemu/{vmid}/config
+    pub async fn vm_config_set(
+        &self,
+        node: &str,
+        vmid: u64,
+        config: &serde_json::Value,
+    ) -> Result<serde_json::Value, Error> {
+        self.put(&format!("nodes/{node}/qemu/{vmid}/config"), config).await
+    }
+
+    /// List snapshots for a VM.
+    /// GET /nodes/{node}/qemu/{vmid}/snapshot
+    pub async fn list_snapshots(&self, node: &str, vmid: u64) -> Result<Vec<SnapshotListItem>, Error> {
+        self.get(&format!("nodes/{node}/qemu/{vmid}/snapshot")).await
+    }
+
+    /// Create a VM snapshot.
+    /// POST /nodes/{node}/qemu/{vmid}/snapshot
+    pub async fn snapshot_create(
+        &self,
+        node: &str,
+        vmid: u64,
+        opts: &SnapshotCreateOptions,
+    ) -> Result<TaskResponse, Error> {
+        self.post(&format!("nodes/{node}/qemu/{vmid}/snapshot"), opts).await
+    }
+
+    /// Roll back a VM to a snapshot.
+    /// POST /nodes/{node}/qemu/{vmid}/snapshot/{snapname}/rollback
+    pub async fn snapshot_rollback(&self, node: &str, vmid: u64, snapname: &str) -> Result<TaskResponse, Error> {
+        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/snapshot/{snapname}/rollback"))
+            .await
+    }
+
+    /// Delete a VM snapshot.
+    /// DELETE /nodes/{node}/qemu/{vmid}/snapshot/{snapname}
+    pub async fn snapshot_delete(&self, node: &str, vmid: u64, snapname: &str) -> Result<TaskResponse, Error> {
+        self.delete(&format!("nodes/{node}/qemu/{vmid}/snapshot/{snapname}"))
+            .await
     }
 
     // ── Containers (LXC) ─────────────────────────────────────────────

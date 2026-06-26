@@ -259,3 +259,81 @@ pub struct VmMigrateOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub online: Option<u8>,
 }
+
+// ---------------------------------------------------------------------------
+// VM Lifecycle
+// ---------------------------------------------------------------------------
+
+/// Options for creating a VM (POST /nodes/{node}/qemu).
+#[derive(Debug, Serialize)]
+pub struct VmCreateOptions {
+    pub node: String,
+    pub name: String,
+    /// Desired VM ID (auto-assigned if omitted).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vmid: Option<u64>,
+    /// Source template VM ID to clone from.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub template: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cores: Option<u64>,
+    /// Memory in MiB.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memory: Option<u64>,
+    /// Target storage.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<String>,
+    /// 1 for full clone (defaults to 1 for non-linked clones).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full: Option<u8>,
+}
+
+/// Options for cloning a VM (POST /nodes/{node}/qemu/{vmid}/clone).
+#[derive(Debug, Serialize)]
+pub struct VmCloneOptions {
+    pub node: String,
+    pub vmid: u64,
+    pub newid: u64,
+    pub name: String,
+    /// Target storage for the clone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<String>,
+    /// 1 for full clone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full: Option<u8>,
+    /// Target node for the clone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
+}
+
+/// Options for resizing a VM disk (PUT /nodes/{node}/qemu/{vmid}/resize).
+#[derive(Debug, Serialize)]
+pub struct VmResizeDiskOptions {
+    /// Disk identifier (e.g. "scsi0", "virtio0").
+    pub disk: String,
+    /// New size (e.g. "+10G", "32G").
+    pub size: String,
+}
+
+/// A snapshot entry returned by the list-snapshots endpoint.
+#[derive(Debug, Deserialize)]
+pub struct SnapshotListItem {
+    pub name: String,
+    pub description: Option<String>,
+    /// Unix epoch timestamp of when the snapshot was taken.
+    pub snaptime: Option<u64>,
+    /// Parent snapshot name (empty string for root / "current").
+    pub parent: Option<String>,
+    /// VM ID this snapshot belongs to.
+    pub vmid: Option<u64>,
+}
+
+/// Options for creating a VM snapshot (POST /nodes/{node}/qemu/{vmid}/snapshot).
+#[derive(Debug, Serialize)]
+pub struct SnapshotCreateOptions {
+    /// Snapshot name.
+    pub snapname: String,
+    /// Optional description.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
