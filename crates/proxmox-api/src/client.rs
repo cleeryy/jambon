@@ -224,7 +224,7 @@ impl ProxmoxClient {
             node: node.to_string(),
             vmid,
             timeout,
-            keepActive: None,
+            keep_active: None,
         };
         self.post(&format!("nodes/{node}/qemu/{vmid}/status/shutdown"), opts)
             .await

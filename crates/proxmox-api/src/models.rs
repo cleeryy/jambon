@@ -233,8 +233,8 @@ pub struct VmShutdownOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout: Option<u64>,
     /// Skip HA checks.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub keepActive: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "keepActive")]
+    pub keep_active: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]

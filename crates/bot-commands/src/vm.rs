@@ -55,7 +55,7 @@ pub async fn list(
     }
 
     let embed = serenity::CreateEmbed::new()
-        .title(format!("VMs on {}", node.unwrap_or_else(|| "all nodes".into())))
+        .title(format!("VMs on {node}"))
         .description(if desc.is_empty() { "No VMs found.".into() } else { desc })
         .color(0x00aaff);
 
