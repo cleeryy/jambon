@@ -26,6 +26,10 @@ pub async fn handle_event(
         tokio::spawn(async move {
             health_monitor_loop(ctx, interval, alert_channel, proxmox).await;
         });
+
+        let scheduler = data.scheduler.clone();
+        let scheduler_proxmox = data.proxmox.clone();
+        scheduler.start(scheduler_proxmox);
     }
 
     Ok(())
