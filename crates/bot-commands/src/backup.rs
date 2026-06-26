@@ -46,7 +46,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         } else {
             desc
         })
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     Ok(())
@@ -83,7 +83,7 @@ pub async fn create(
             "Backup of VM(s) `{vmid}` on **{node}** \u{2192} `{storage}`\nTask: `{}`",
             task.data
         ))
-        .color(0x00ff00);
+        .color(crate::colors::COLOR_SUCCESS);
 
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())
@@ -114,9 +114,9 @@ pub async fn status(
             "{status_icon} Status: {status_str} | Exit: {exit}\nUPID: `{upid}`",
         ))
         .color(match exit {
-            "OK" => 0x00ff00,
-            "RUNNING" => 0xffaa00,
-            _ => 0xff0000,
+            "OK" => crate::colors::COLOR_SUCCESS,
+            "RUNNING" => crate::colors::COLOR_WARNING,
+            _ => crate::colors::COLOR_ERROR,
         });
 
     ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;

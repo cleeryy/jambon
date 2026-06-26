@@ -69,7 +69,7 @@ pub async fn list(
     let embed = serenity::CreateEmbed::new()
         .title(format!("VMs on {node_label}"))
         .description(if desc.is_empty() { "No VMs found.".into() } else { desc })
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     Ok(())
@@ -95,7 +95,7 @@ async fn show_cluster_vms(ctx: Context<'_>, resources: &[jambon_proxmox_api::Clu
     let embed = serenity::CreateEmbed::new()
         .title("Cluster VMs")
         .description(if desc.is_empty() { "No VMs found.".into() } else { desc })
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     Ok(())
@@ -113,9 +113,9 @@ pub async fn status(
     let status = ctx.data().proxmox.vm_status(&node, vmid).await?;
 
     let color = match status.status.as_str() {
-        "running" => 0x00ff00,
-        "stopped" => 0xff0000,
-        _ => 0xffaa00,
+        "running" => crate::colors::COLOR_SUCCESS,
+        "stopped" => crate::colors::COLOR_ERROR,
+        _ => crate::colors::COLOR_WARNING,
     };
 
     let embed = serenity::CreateEmbed::new()

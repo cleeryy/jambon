@@ -42,7 +42,7 @@ pub async fn status(ctx: Context<'_>) -> Result<(), Error> {
         .field("Nodes Online", format!("{online}/{}", nodes.len()), true)
         .field("Running VMs", total_vms.to_string(), true)
         .field("Total Resources", resources.len().to_string(), true)
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())
@@ -95,7 +95,7 @@ pub async fn resources(ctx: Context<'_>) -> Result<(), Error> {
             if storage.is_empty() { "None".into() } else { storage },
             false,
         )
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())

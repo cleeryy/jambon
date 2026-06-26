@@ -42,7 +42,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let embed = serenity::CreateEmbed::new()
         .title("Proxmox Cluster Nodes")
         .description(desc)
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())
@@ -55,7 +55,11 @@ pub async fn status(ctx: Context<'_>, #[description = "Node name"] node_name: St
 
     let status = ctx.data().proxmox.node_status(&node_name).await?;
 
-    let color = if status.cpu > 0.9 { 0xff0000 } else { 0x00ff00 };
+    let color = if status.cpu > 0.9 {
+        crate::colors::COLOR_ERROR
+    } else {
+        crate::colors::COLOR_SUCCESS
+    };
 
     let embed = serenity::CreateEmbed::new()
         .title(format!("Node: {node_name}"))
