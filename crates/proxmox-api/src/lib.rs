@@ -11,3 +11,8 @@ pub mod resources;
 
 pub use client::ProxmoxClient;
 pub use error::Error;
+pub use models::{
+    ApiResponse, BackupJob, ClusterResource, LxcSummary, NodeStatus, NodeSummary,
+    StorageContent, StorageSummary, TaskResponse, TaskStatus, VersionInfo, VmConfig,
+    VmShutdownOptions, VmStatus, VmSummary,
+};

@@ -15,7 +15,7 @@ pub async fn handle_event(
     data: &jambon_bot_commands::Data,
 ) -> Result<(), Error> {
     match event {
-        serenity::FullEvent::Ready { data_about: _ } => {
+        serenity::FullEvent::Ready { .. } => {
             info!("Bot is ready! Logged in as {}", ctx.cache.current_user().name);
 
             // Spawn background health monitor.

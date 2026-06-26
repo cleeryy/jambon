@@ -11,7 +11,7 @@ use crate::{Context, Error};
     default_member_permissions = "ADMINISTRATOR",
     category = "Proxmox"
 )]
-pub async fn vm(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn vm(_ctx: Context<'_>) -> Result<(), Error> {
     unreachable!("subcommand_required is set")
 }
 
@@ -23,14 +23,16 @@ pub async fn list(
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
-    let vms = if let Some(node) = node {
-        ctx.data().proxmox.list_vms(&node).await?
+    let node_label = node.as_deref().unwrap_or("all nodes").to_string();
+
+    let vms = if let Some(ref node_name) = node {
+        ctx.data().proxmox.list_vms(node_name).await?
     } else {
         let resources = ctx.data().proxmox.resources().vms().await?;
         let mut all = Vec::new();
         for r in &resources {
-            if let (Some(node), Some(vmid)) = (&r.node, r.vmid) {
-                if let Ok(vm) = ctx.data().proxmox.vm_status(node, vmid).await {
+            if let (Some(rnode), Some(vmid)) = (&r.node, r.vmid) {
+                if let Ok(vm) = ctx.data().proxmox.vm_status(rnode, vmid).await {
                     all.push(vm);
                 }
             }
@@ -55,7 +57,7 @@ pub async fn list(
     }
 
     let embed = serenity::CreateEmbed::new()
-        .title(format!("VMs on {node}"))
+        .title(format!("VMs on {node_label}"))
         .description(if desc.is_empty() { "No VMs found.".into() } else { desc })
         .color(0x00aaff);
 

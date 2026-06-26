@@ -16,7 +16,7 @@ pub struct BotFramework {
 
 impl BotFramework {
     /// Start the bot's gateway connection (blocks on signal).
-    pub async fn start(self) -> Result<(), CoreError> {
+    pub async fn start(mut self) -> Result<(), CoreError> {
         self.client.start().await.map_err(CoreError::Discord)
     }
 }
