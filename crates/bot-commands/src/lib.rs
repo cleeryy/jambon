@@ -4,6 +4,7 @@
 //! cluster operations, and administrative commands.
 
 pub mod admin;
+pub mod backup;
 pub mod cluster;
 pub mod r#mod;
 pub mod node;
@@ -32,6 +33,7 @@ pub fn all_commands() -> Vec<poise::Command<Data, Error>> {
         node::node(),
         cluster::cluster(),
         storage::storage(),
+        backup::backup(),
         r#mod::r#mod(),
         admin::register(),
         admin::ping(),
