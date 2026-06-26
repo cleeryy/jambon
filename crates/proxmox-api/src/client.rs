@@ -278,6 +278,23 @@ impl ProxmoxClient {
         self.get("cluster/backup").await
     }
 
+    pub async fn create_backup(
+        &self,
+        node: &str,
+        vmid: &str,
+        storage: &str,
+        mode: Option<&str>,
+        compress: Option<&str>,
+    ) -> Result<TaskResponse, Error> {
+        let opts = BackupCreateOptions {
+            vmid: vmid.to_string(),
+            storage: storage.to_string(),
+            mode: mode.map(|m| m.to_string()),
+            compress: compress.map(|c| c.to_string()),
+        };
+        self.post(&format!("nodes/{node}/vzdump"), opts).await
+    }
+
     // ── Task tracking ─────────────────────────────────────────────────
 
     pub async fn task_status(&self, node: &str, upid: &str) -> Result<TaskStatus, Error> {

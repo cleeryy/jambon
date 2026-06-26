@@ -220,6 +220,16 @@ pub struct TaskStatus {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
+pub struct BackupCreateOptions {
+    pub vmid: String,
+    pub storage: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub compress: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct VmStartOptions {
     pub node: String,
     pub vmid: u64,
