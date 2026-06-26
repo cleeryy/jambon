@@ -1,0 +1,27 @@
+[package]
+name = "jambon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Jambon — A Discord bot to control Proxmox VE instances"
+
+[[bin]]
+name = "jambon"
+path = "src/main.rs"
+
+[dependencies]
+poise.workspace = true
+serenity.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+dotenvy.workspace = true
+jambon-bot-core = { path = "../bot-core" }
+jambon-bot-commands = { path = "../bot-commands" }
+jambon-proxmox-api = { path = "../proxmox-api" }
+
+[lints]
+workspace = true

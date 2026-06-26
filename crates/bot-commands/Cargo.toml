@@ -1,0 +1,17 @@
+[package]
+name = "jambon-bot-commands"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Discord slash command handlers for Jambon"
+
+[dependencies]
+poise.workspace = true
+serenity.workspace = true
+tracing.workspace = true
+jambon-proxmox-api = { path = "../proxmox-api" }
+
+[lints]
+workspace = true

@@ -1,0 +1,22 @@
+[package]
+name = "jambon-bot-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Core bot framework integration for Jambon"
+
+[dependencies]
+poise.workspace = true
+serenity.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jambon-proxmox-api = { path = "../proxmox-api" }
+jambon-bot-commands = { path = "../bot-commands" }
+
+[lints]
+workspace = true

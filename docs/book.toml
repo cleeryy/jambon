@@ -1,0 +1,17 @@
+[book]
+title = "Jambon Documentation"
+authors = ["cleeryy"]
+description = "Comprehensive documentation for Jambon — a Discord bot to control Proxmox VE instances"
+language = "en"
+
+[build]
+build-dir = "book"
+create-missing = true
+
+[output.html]
+additional-css = ["custom.css"]
+git-repository-url = "https://github.com/cleeryy/jambon"
+edit-url-template = "https://github.com/cleeryy/jambon/edit/main/docs/{path}"
+
+[output.html.search]
+limit-results = 15
