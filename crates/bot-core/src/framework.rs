@@ -63,6 +63,7 @@ pub async fn build_framework(config: Config) -> Result<BotFramework, CoreError> 
                     alert_channel_id: config.alert_channel_id,
                     monitor_interval_secs: config.monitor_interval_secs,
                     proxmox_url: config.proxmox_url.clone(),
+                    audit_log: jambon_bot_commands::AuditLog::new(100),
                 })
             })
         })
