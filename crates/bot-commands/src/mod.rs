@@ -24,7 +24,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         .field("Container Management", "Start, stop containers", false)
         .field("Node Management", "List and inspect nodes", false)
         .field("Cluster Monitoring", "Cluster status and resources", false)
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     Ok(())

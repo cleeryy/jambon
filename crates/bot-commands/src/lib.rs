@@ -7,6 +7,7 @@ pub mod admin;
 pub mod audit;
 pub mod backup;
 pub mod cluster;
+pub mod colors;
 pub mod r#mod;
 pub mod node;
 pub mod permissions;

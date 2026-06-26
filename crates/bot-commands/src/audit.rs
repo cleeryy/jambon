@@ -44,7 +44,7 @@ pub async fn recent(
     let embed = poise::serenity_prelude::CreateEmbed::new()
         .title(format!("Audit Log (last {} entries)", entries.len()))
         .description(desc)
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     let reply = poise::CreateReply::default().embed(embed).ephemeral(true);
     ctx.send(reply).await?;

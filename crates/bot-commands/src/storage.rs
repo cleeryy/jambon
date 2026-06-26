@@ -51,7 +51,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
         } else {
             desc
         })
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     Ok(())
@@ -92,7 +92,7 @@ pub async fn status(ctx: Context<'_>, #[description = "Storage pool name"] pool:
     let embed = serenity::CreateEmbed::new()
         .title(format!("Storage Pool: {pool}"))
         .description(desc)
-        .color(0x00aaff);
+        .color(crate::colors::COLOR_INFO);
 
     ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     Ok(())
