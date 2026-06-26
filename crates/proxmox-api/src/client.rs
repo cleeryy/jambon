@@ -252,10 +252,22 @@ impl ProxmoxClient {
 
     // ── Storage ──────────────────────────────────────────────────────
 
+    /// List all storages configured on the cluster.
     pub async fn list_storage(&self) -> Result<Vec<StorageSummary>, Error> {
         self.get("storage").await
     }
 
+    /// List storages available on a specific node (includes usage).
+    pub async fn node_storage(&self, node: &str) -> Result<Vec<StorageSummary>, Error> {
+        self.get(&format!("nodes/{node}/storage")).await
+    }
+
+    /// Get detailed status of a specific storage on a node.
+    pub async fn storage_status(&self, node: &str, storage: &str) -> Result<StorageSummary, Error> {
+        self.get(&format!("nodes/{node}/storage/{storage}/status")).await
+    }
+
+    /// List content (volumes/VMs/backups) in a storage.
     pub async fn storage_content(&self, storage: &str) -> Result<Vec<StorageContent>, Error> {
         self.get(&format!("storage/{storage}/content")).await
     }

@@ -156,12 +156,15 @@ pub struct LxcSummary {
 #[derive(Debug, Deserialize)]
 pub struct StorageSummary {
     pub storage: String,
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
     pub status: Option<String>,
     pub used: Option<u64>,
     pub avail: Option<u64>,
     pub used_fraction: Option<f64>,
     pub content: Option<String>,
     pub shared: Option<u8>,
+    pub active: Option<u8>,
 }
 
 #[derive(Debug, Deserialize)]

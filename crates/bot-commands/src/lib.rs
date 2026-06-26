@@ -8,6 +8,7 @@ pub mod cluster;
 pub mod r#mod;
 pub mod node;
 pub mod permissions;
+pub mod storage;
 pub mod vm;
 
 /// Shared error type for all command handlers.
@@ -30,6 +31,7 @@ pub fn all_commands() -> Vec<poise::Command<Data, Error>> {
         vm::vm(),
         node::node(),
         cluster::cluster(),
+        storage::storage(),
         r#mod::r#mod(),
         admin::register(),
         admin::ping(),
