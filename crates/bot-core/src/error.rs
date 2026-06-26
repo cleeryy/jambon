@@ -8,7 +8,7 @@ pub enum Error {
     Proxmox(#[from] jambon_proxmox_api::Error),
 
     #[error("Discord error: {0}")]
-    Discord(#[from] poise::serenity_prelude::Error),
+    Discord(Box<poise::serenity_prelude::Error>),
 
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),

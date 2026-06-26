@@ -6,10 +6,7 @@ pub enum Error {
     /// HTTP transport-level error (connectivity, TLS, etc.).
     Http(reqwest::Error),
     /// API returned an error status code with a message.
-    Api {
-        status: reqwest::StatusCode,
-        body: String,
-    },
+    Api { status: reqwest::StatusCode, body: String },
     /// Authentication failed (401 / 403).
     Unauthorized(String),
     /// The requested resource was not found.

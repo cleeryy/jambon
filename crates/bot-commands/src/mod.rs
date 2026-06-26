@@ -8,7 +8,7 @@ use crate::{Context, Error};
     slash_command,
     subcommands("list"),
     subcommand_required,
-    default_member_permissions = "ADMINISTRATOR",
+    default_member_permissions = "ADMINISTRATOR"
 )]
 pub async fn r#mod(_ctx: Context<'_>) -> Result<(), Error> {
     unreachable!("subcommand_required is set")

@@ -65,10 +65,7 @@ pub async fn list(
     Ok(())
 }
 
-async fn show_cluster_vms(
-    ctx: Context<'_>,
-    resources: &[jambon_proxmox_api::ClusterResource],
-) -> Result<(), Error> {
+async fn show_cluster_vms(ctx: Context<'_>, resources: &[jambon_proxmox_api::ClusterResource]) -> Result<(), Error> {
     let mut desc = String::new();
     for r in resources {
         let status_icon = match r.status.as_deref() {

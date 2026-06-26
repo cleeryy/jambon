@@ -2,6 +2,6 @@ edition = "2021"
 max_width = 120
 tab_spaces = 4
 newline_style = "Unix"
-imports_granularity = "Crate"
 reorder_imports = true
 reorder_modules = true
+

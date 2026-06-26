@@ -2,7 +2,7 @@ name: Security Audit
 
 on:
   push:
-    branches: [master]
+    branches: [master, dev]
     paths: ['**/Cargo.toml', '**/Cargo.lock']
   pull_request:
     paths: ['**/Cargo.toml', '**/Cargo.lock']

@@ -13,9 +13,11 @@ pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(slash_command)]
 pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
     let latency = ctx.ping().await;
-    ctx.send(CreateReply::default()
-        .content(format!("Pong! Latency: {}ms", latency.as_millis()))
-        .ephemeral(true))
-        .await?;
+    ctx.send(
+        CreateReply::default()
+            .content(format!("Pong! Latency: {}ms", latency.as_millis()))
+            .ephemeral(true),
+    )
+    .await?;
     Ok(())
 }

@@ -17,7 +17,7 @@ pub struct BotFramework {
 impl BotFramework {
     /// Start the bot's gateway connection (blocks on signal).
     pub async fn start(mut self) -> Result<(), CoreError> {
-        self.client.start().await.map_err(CoreError::Discord)
+        self.client.start().await.map_err(|e| CoreError::Discord(Box::new(e)))
     }
 }
 
@@ -29,9 +29,7 @@ pub async fn build_framework(config: Config) -> Result<BotFramework, CoreError> 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: jambon_bot_commands::all_commands(),
-            event_handler: |ctx, event, framework, data| {
-                Box::pin(events::handle_event(ctx, event, framework, data))
-            },
+            event_handler: |ctx, event, framework, data| Box::pin(events::handle_event(ctx, event, framework, data)),
             on_error: |error| Box::pin(on_error::<jambon_bot_commands::Data>(error)),
             owners: HashSet::new(),
             ..Default::default()
@@ -49,8 +47,7 @@ pub async fn build_framework(config: Config) -> Result<BotFramework, CoreError> 
                     .await?;
                 } else {
                     tracing::info!("Registering commands globally");
-                    poise::builtins::register_globally(ctx, &framework.options().commands)
-                        .await?;
+                    poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 }
 
                 // Wrap config into shared user data.
@@ -71,13 +68,12 @@ pub async fn build_framework(config: Config) -> Result<BotFramework, CoreError> 
         })
         .build();
 
-    let intents = serenity::GatewayIntents::non_privileged()
-        | serenity::GatewayIntents::MESSAGE_CONTENT;
+    let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
     let client = serenity::ClientBuilder::new(&config.discord_token, intents)
         .framework(framework)
         .await
-        .map_err(CoreError::Discord)?;
+        .map_err(|e| CoreError::Discord(Box::new(e)))?;
 
     Ok(BotFramework { client })
 }
@@ -101,7 +97,11 @@ async fn on_error<Data: Send + Sync>(error: poise::FrameworkError<'_, Data, Erro
                 tracing::error!("Failed to send error message: {e}");
             }
         }
-        poise::FrameworkError::MissingBotPermissions { missing_permissions, ctx, .. } => {
+        poise::FrameworkError::MissingBotPermissions {
+            missing_permissions,
+            ctx,
+            ..
+        } => {
             let msg = format!("I need the `{missing_permissions}` permission to do that.");
             if let Err(e) = ctx.say(msg).await {
                 tracing::error!("Failed to send error message: {e}");

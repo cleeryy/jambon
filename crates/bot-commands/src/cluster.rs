@@ -85,8 +85,16 @@ pub async fn resources(ctx: Context<'_>) -> Result<(), Error> {
 
     let embed = serenity::CreateEmbed::new()
         .title("Cluster Resources")
-        .field("Virtual Machines", if vms.is_empty() { "None".into() } else { vms }, false)
-        .field("Storage", if storage.is_empty() { "None".into() } else { storage }, false)
+        .field(
+            "Virtual Machines",
+            if vms.is_empty() { "None".into() } else { vms },
+            false,
+        )
+        .field(
+            "Storage",
+            if storage.is_empty() { "None".into() } else { storage },
+            false,
+        )
         .color(0x00aaff);
 
     ctx.send(CreateReply::default().embed(embed)).await?;

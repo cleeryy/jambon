@@ -61,10 +61,14 @@ impl ProxmoxClient {
         let base_url = base_url.into();
         let http = Self::build_http(accept_invalid_certs)?;
         let auth_value = format!("PVEAPIToken={token_id}={token_secret}");
-        let auth_header = HeaderValue::from_str(&auth_value)
-            .map_err(|e| Error::Config(format!("invalid token value: {e}")))?;
+        let auth_header =
+            HeaderValue::from_str(&auth_value).map_err(|e| Error::Config(format!("invalid token value: {e}")))?;
 
-        Ok(Self { base_url, http, auth_header })
+        Ok(Self {
+            base_url,
+            http,
+            auth_header,
+        })
     }
 
     /// Create a client with username/password ticket auth.
@@ -72,13 +76,17 @@ impl ProxmoxClient {
     /// This is less convenient for bots than API-token auth because tickets
     /// expire (usually after 2 hours).
     ///
-    /// You must call [`login`][Self::login] before making other requests.
+    /// You must call `login` before making other requests.
     pub fn with_ticket(base_url: impl Into<String>, accept_invalid_certs: bool) -> Result<Self, Error> {
         let base_url = base_url.into();
         let http = Self::build_http(accept_invalid_certs)?;
         let auth_header = HeaderValue::from_static(""); // placeholder, set by login()
 
-        Ok(Self { base_url, http, auth_header })
+        Ok(Self {
+            base_url,
+            http,
+            auth_header,
+        })
     }
 
     fn build_http(accept_invalid_certs: bool) -> Result<HttpClient, Error> {
@@ -108,10 +116,7 @@ impl ProxmoxClient {
         format!("{}/api2/json/{path}", self.base_url)
     }
 
-    async fn get<T: serde::de::DeserializeOwned>(
-        &self,
-        path: &str,
-    ) -> Result<T, Error> {
+    async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
         let resp = self
             .http
             .get(self.url(path))
@@ -122,11 +127,7 @@ impl ProxmoxClient {
         Self::handle_response(resp).await
     }
 
-    async fn post<T: serde::de::DeserializeOwned>(
-        &self,
-        path: &str,
-        body: impl serde::Serialize,
-    ) -> Result<T, Error> {
+    async fn post<T: serde::de::DeserializeOwned>(&self, path: &str, body: impl serde::Serialize) -> Result<T, Error> {
         let resp = self
             .http
             .post(self.url(path))
@@ -138,10 +139,7 @@ impl ProxmoxClient {
         Self::handle_response(resp).await
     }
 
-    async fn post_empty<T: serde::de::DeserializeOwned>(
-        &self,
-        path: &str,
-    ) -> Result<T, Error> {
+    async fn post_empty<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
         let resp = self
             .http
             .post(self.url(path))
@@ -152,16 +150,12 @@ impl ProxmoxClient {
         Self::handle_response(resp).await
     }
 
-    async fn handle_response<T: serde::de::DeserializeOwned>(
-        resp: reqwest::Response,
-    ) -> Result<T, Error> {
+    async fn handle_response<T: serde::de::DeserializeOwned>(resp: reqwest::Response) -> Result<T, Error> {
         let status = resp.status();
         if !status.is_success() {
             let body = resp.text().await.unwrap_or_default();
             return match status {
-                reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
-                    Err(Error::Unauthorized(body))
-                }
+                reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => Err(Error::Unauthorized(body)),
                 reqwest::StatusCode::NOT_FOUND => Err(Error::NotFound(body)),
                 _ => Err(Error::Api { status, body }),
             };
@@ -206,8 +200,7 @@ impl ProxmoxClient {
     }
 
     pub async fn vm_status(&self, node: &str, vmid: u64) -> Result<VmStatus, Error> {
-        self.get(&format!("nodes/{node}/qemu/{vmid}/status/current"))
-            .await
+        self.get(&format!("nodes/{node}/qemu/{vmid}/status/current")).await
     }
 
     pub async fn vm_config(&self, node: &str, vmid: u64) -> Result<VmConfig, Error> {
@@ -215,8 +208,7 @@ impl ProxmoxClient {
     }
 
     pub async fn vm_start(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
-        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/start"))
-            .await
+        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/start")).await
     }
 
     pub async fn vm_shutdown(&self, node: &str, vmid: u64, timeout: Option<u64>) -> Result<TaskResponse, Error> {
@@ -231,24 +223,17 @@ impl ProxmoxClient {
     }
 
     pub async fn vm_stop(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
-        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/stop"))
-            .await
+        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/stop")).await
     }
 
-    pub async fn vm_migrate(
-        &self,
-        node: &str,
-        vmid: u64,
-        target: &str,
-    ) -> Result<TaskResponse, Error> {
+    pub async fn vm_migrate(&self, node: &str, vmid: u64, target: &str) -> Result<TaskResponse, Error> {
         let opts = VmMigrateOptions {
             node: node.to_string(),
             vmid,
             target: target.to_string(),
             online: Some(1),
         };
-        self.post(&format!("nodes/{node}/qemu/{vmid}/migrate"), opts)
-            .await
+        self.post(&format!("nodes/{node}/qemu/{vmid}/migrate"), opts).await
     }
 
     // ── Containers (LXC) ─────────────────────────────────────────────
@@ -258,13 +243,11 @@ impl ProxmoxClient {
     }
 
     pub async fn container_start(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
-        self.post_empty(&format!("nodes/{node}/lxc/{vmid}/status/start"))
-            .await
+        self.post_empty(&format!("nodes/{node}/lxc/{vmid}/status/start")).await
     }
 
     pub async fn container_stop(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
-        self.post_empty(&format!("nodes/{node}/lxc/{vmid}/status/stop"))
-            .await
+        self.post_empty(&format!("nodes/{node}/lxc/{vmid}/status/stop")).await
     }
 
     // ── Storage ──────────────────────────────────────────────────────
@@ -273,10 +256,7 @@ impl ProxmoxClient {
         self.get("storage").await
     }
 
-    pub async fn storage_content(
-        &self,
-        storage: &str,
-    ) -> Result<Vec<StorageContent>, Error> {
+    pub async fn storage_content(&self, storage: &str) -> Result<Vec<StorageContent>, Error> {
         self.get(&format!("storage/{storage}/content")).await
     }
 

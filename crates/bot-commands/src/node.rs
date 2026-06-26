@@ -50,10 +50,7 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
 
 /// Get detailed status of a specific node
 #[poise::command(slash_command)]
-pub async fn status(
-    ctx: Context<'_>,
-    #[description = "Node name"] node_name: String,
-) -> Result<(), Error> {
+pub async fn status(ctx: Context<'_>, #[description = "Node name"] node_name: String) -> Result<(), Error> {
     ctx.defer().await?;
 
     let status = ctx.data().proxmox.node_status(&node_name).await?;

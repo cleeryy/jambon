@@ -5,8 +5,8 @@
 
 pub mod admin;
 pub mod cluster;
-pub mod node;
 pub mod r#mod;
+pub mod node;
 pub mod vm;
 
 /// Shared error type for all command handlers.
