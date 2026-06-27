@@ -70,13 +70,40 @@ Optional variables:
 
 ## Step 4: Run the Bot
 
-### Docker (recommended)
+### Docker with Dokploy (recommended)
+
+[Jambon has a Dockerfile](https://github.com/cleeryy/jambon/blob/master/Dockerfile) ready for deployment.
+
+**In Dokploy:**
+
+1. Create a new project and select **Docker** as the deployment type.
+2. Point it to your fork/clone of the repository — Dokploy will build the Dockerfile automatically.
+3. In the **Environment** section, add all required variables from `.env.example`:
+   - `DISCORD_TOKEN`, `PROXMOX_URL`, `PROXMOX_TOKEN_ID`, `PROXMOX_TOKEN_SECRET`
+4. Optionally add `DEV_GUILD_ID`, `ALERT_CHANNEL_ID`, `MONITOR_INTERVAL_SECS`, `ACCEPT_INVALID_CERTS`.
+5. Deploy. The bot connects to Discord and Proxmox automatically on startup.
+
+> **No `.env` file needed in Dokploy** — set the environment variables directly in the dashboard. The bot reads them at startup via `dotenvy`.
+
+### Docker Compose (local)
 
 ```bash
 docker compose up -d
 ```
 
-### Native
+The `docker-compose.yml` loads variables from a `.env` file in the same directory:
+
+```yaml
+services:
+  jambon:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+```
+
+Make sure your `.env` is configured before running.
+
+### Native (development)
 
 ```bash
 cargo run --release
@@ -84,7 +111,24 @@ cargo run --release
 
 ### Kubernetes with Helm
 
-See the [Helm deployment](../deploy/helm/README.md) documentation.
+A Helm chart is available at `deploy/helm/jambon/`. Deploy with:
+
+```bash
+# Create the secret with your credentials
+kubectl create secret generic jambon-secrets \
+  --from-literal=discord-token="$DISCORD_TOKEN" \
+  --from-literal=proxmox-token-secret="$PROXMOX_TOKEN_SECRET"
+
+# Install the chart
+helm install jambon ./deploy/helm/jambon \
+  --set env.proxmoxUrl="$PROXMOX_URL" \
+  --set env.proxmoxTokenId="$PROXMOX_TOKEN_ID" \
+  --set env.devGuildId="$DEV_GUILD_ID" \
+  --set env.alertChannelId="$ALERT_CHANNEL_ID"
+
+# Or use a custom values file
+helm install jambon ./deploy/helm/jambon -f my-values.yaml
+```
 
 ## Setting Up Roles
 

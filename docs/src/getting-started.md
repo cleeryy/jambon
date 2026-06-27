@@ -45,7 +45,11 @@ This will output a token secret (UUID) — copy it to `PROXMOX_TOKEN_SECRET`.
 ### 4. Build and run
 
 ```bash
+# Native
 cargo run --release
+
+# Or with Docker
+docker compose up -d
 ```
 
 ## Discord Setup
