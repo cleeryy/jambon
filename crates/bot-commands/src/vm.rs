@@ -44,7 +44,13 @@ pub async fn list(
         const PAGE_SIZE: usize = 6;
         let total_pages = (vms.len().max(1) - 1) / PAGE_SIZE + 1;
         let (embed, components) = crate::interactions::build_vm_list_embed(&vms, 0, node_name, total_pages);
-        ctx.send(CreateReply::default().embed(embed).components(components).ephemeral(true)).await?;
+        ctx.send(
+            CreateReply::default()
+                .embed(embed)
+                .components(components)
+                .ephemeral(true),
+        )
+        .await?;
     } else {
         let resources = ctx.data().proxmox.resources().vms().await?;
         return show_cluster_vms(ctx, &resources).await;
@@ -94,7 +100,8 @@ pub async fn status(
 
     let status = ctx.data().proxmox.vm_status(&node, vmid).await?;
     let (embed, components) = crate::interactions::build_vm_detail_embed(&status, &node, vmid);
-    ctx.send(CreateReply::default().embed(embed).components(components)).await?;
+    ctx.send(CreateReply::default().embed(embed).components(components))
+        .await?;
     Ok(())
 }
 
@@ -667,5 +674,3 @@ pub async fn agent_exec(
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())
 }
-
-

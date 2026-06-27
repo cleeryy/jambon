@@ -77,13 +77,8 @@ pub async fn menu(ctx: Context<'_>) -> Result<(), Error> {
         ]),
     ];
 
-    ctx.send(
-        CreateReply::default()
-            .embed(embed)
-            .components(buttons)
-            .ephemeral(true),
-    )
-    .await?;
+    ctx.send(CreateReply::default().embed(embed).components(buttons).ephemeral(true))
+        .await?;
 
     Ok(())
 }

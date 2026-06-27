@@ -3,10 +3,7 @@ use serenity::all::AutocompleteChoice;
 
 use crate::Context;
 
-pub async fn autocomplete_node<'a>(
-    ctx: Context<'a>,
-    partial: &'a str,
-) -> Vec<String> {
+pub async fn autocomplete_node<'a>(ctx: Context<'a>, partial: &'a str) -> Vec<String> {
     let proxmox = &ctx.data().proxmox;
     match proxmox.list_nodes().await {
         Ok(nodes) => {
@@ -24,19 +21,12 @@ pub async fn autocomplete_node<'a>(
     }
 }
 
-pub async fn autocomplete_vm<'a>(
-    ctx: Context<'a>,
-    partial: &'a str,
-) -> Vec<AutocompleteChoice> {
+pub async fn autocomplete_vm<'a>(ctx: Context<'a>, partial: &'a str) -> Vec<AutocompleteChoice> {
     let node = match &ctx {
-        poise::Context::Application(app) => app
-            .args
-            .iter()
-            .find(|o| o.name == "node")
-            .and_then(|o| match &o.value {
-                serenity::ResolvedValue::String(s) => Some(s.to_string()),
-                _ => None,
-            }),
+        poise::Context::Application(app) => app.args.iter().find(|o| o.name == "node").and_then(|o| match &o.value {
+            serenity::ResolvedValue::String(s) => Some(s.to_string()),
+            _ => None,
+        }),
         _ => None,
     };
 
@@ -48,16 +38,12 @@ pub async fn autocomplete_vm<'a>(
     match proxmox.list_vms(&node).await {
         Ok(vms) => {
             let lower = partial.to_lowercase();
-            vms
-                .into_iter()
+            vms.into_iter()
                 .filter_map(|vm| {
                     let id_str = vm.vmid.to_string();
                     let label = vm.name.unwrap_or_default();
                     if id_str.contains(&lower) || label.to_lowercase().contains(&lower) {
-                        Some(AutocompleteChoice::new(
-                            format!("{id_str} ({label})"),
-                            id_str,
-                        ))
+                        Some(AutocompleteChoice::new(format!("{id_str} ({label})"), id_str))
                     } else {
                         None
                     }
@@ -72,10 +58,7 @@ pub async fn autocomplete_vm<'a>(
     }
 }
 
-pub async fn autocomplete_storage<'a>(
-    ctx: Context<'a>,
-    partial: &'a str,
-) -> Vec<String> {
+pub async fn autocomplete_storage<'a>(ctx: Context<'a>, partial: &'a str) -> Vec<String> {
     let proxmox = &ctx.data().proxmox;
     match proxmox.list_storage().await {
         Ok(storages) => {

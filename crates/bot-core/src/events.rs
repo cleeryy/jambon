@@ -32,10 +32,10 @@ pub async fn handle_event(
             let scheduler_proxmox = data.proxmox.clone();
             scheduler.start(scheduler_proxmox);
         }
-        serenity::FullEvent::InteractionCreate { interaction } => {
-            if let serenity::Interaction::Component(component) = interaction {
-                let _ = jambon_bot_commands::interactions::handle_component(ctx, component, data).await;
-            }
+        serenity::FullEvent::InteractionCreate {
+            interaction: serenity::Interaction::Component(component),
+        } => {
+            let _ = jambon_bot_commands::interactions::handle_component(ctx, component, data).await;
         }
         _ => {}
     }
