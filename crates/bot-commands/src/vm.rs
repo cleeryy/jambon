@@ -2,6 +2,7 @@ use poise::serenity_prelude as serenity;
 use poise::CreateReply;
 
 use crate::audit::AuditEntry;
+use crate::autocomplete;
 use crate::{Context, Error};
 
 fn audit_entry(user: &str, command: &str, details: String) -> AuditEntry {
@@ -32,7 +33,9 @@ pub async fn vm(_ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(slash_command)]
 pub async fn list(
     ctx: Context<'_>,
-    #[description = "Node name (optional \u{2014} shows all nodes if omitted)"] node: Option<String>,
+    #[description = "Node name (optional \u{2014} shows all nodes if omitted)"]
+    #[autocomplete = "autocomplete::autocomplete_node"]
+    node: Option<String>,
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
@@ -41,7 +44,13 @@ pub async fn list(
         const PAGE_SIZE: usize = 6;
         let total_pages = (vms.len().max(1) - 1) / PAGE_SIZE + 1;
         let (embed, components) = crate::interactions::build_vm_list_embed(&vms, 0, node_name, total_pages);
-        ctx.send(CreateReply::default().embed(embed).components(components).ephemeral(true)).await?;
+        ctx.send(
+            CreateReply::default()
+                .embed(embed)
+                .components(components)
+                .ephemeral(true),
+        )
+        .await?;
     } else {
         let resources = ctx.data().proxmox.resources().vms().await?;
         return show_cluster_vms(ctx, &resources).await;
@@ -80,14 +89,19 @@ async fn show_cluster_vms(ctx: Context<'_>, resources: &[jambon_proxmox_api::Clu
 #[poise::command(slash_command)]
 pub async fn status(
     ctx: Context<'_>,
-    #[description = "Node name"] node: String,
-    #[description = "VM ID"] vmid: u64,
+    #[description = "Node name"]
+    #[autocomplete = "autocomplete::autocomplete_node"]
+    node: String,
+    #[description = "VM ID"]
+    #[autocomplete = "autocomplete::autocomplete_vm"]
+    vmid: u64,
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
     let status = ctx.data().proxmox.vm_status(&node, vmid).await?;
     let (embed, components) = crate::interactions::build_vm_detail_embed(&status, &node, vmid);
-    ctx.send(CreateReply::default().embed(embed).components(components)).await?;
+    ctx.send(CreateReply::default().embed(embed).components(components))
+        .await?;
     Ok(())
 }
 
@@ -95,8 +109,12 @@ pub async fn status(
 #[poise::command(slash_command)]
 pub async fn start(
     ctx: Context<'_>,
-    #[description = "Node name"] node: String,
-    #[description = "VM ID"] vmid: u64,
+    #[description = "Node name"]
+    #[autocomplete = "autocomplete::autocomplete_node"]
+    node: String,
+    #[description = "VM ID"]
+    #[autocomplete = "autocomplete::autocomplete_vm"]
+    vmid: u64,
 ) -> Result<(), Error> {
     crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
@@ -116,8 +134,12 @@ pub async fn start(
 #[poise::command(slash_command)]
 pub async fn stop(
     ctx: Context<'_>,
-    #[description = "Node name"] node: String,
-    #[description = "VM ID"] vmid: u64,
+    #[description = "Node name"]
+    #[autocomplete = "autocomplete::autocomplete_node"]
+    node: String,
+    #[description = "VM ID"]
+    #[autocomplete = "autocomplete::autocomplete_vm"]
+    vmid: u64,
 ) -> Result<(), Error> {
     crate::permissions::require_destructive(ctx).await?;
     ctx.defer().await?;
@@ -139,8 +161,12 @@ pub async fn stop(
 #[poise::command(slash_command)]
 pub async fn shutdown(
     ctx: Context<'_>,
-    #[description = "Node name"] node: String,
-    #[description = "VM ID"] vmid: u64,
+    #[description = "Node name"]
+    #[autocomplete = "autocomplete::autocomplete_node"]
+    node: String,
+    #[description = "VM ID"]
+    #[autocomplete = "autocomplete::autocomplete_vm"]
+    vmid: u64,
     #[description = "Timeout in seconds before force-stop"] timeout: Option<u64>,
 ) -> Result<(), Error> {
     crate::permissions::require_destructive(ctx).await?;
@@ -648,5 +674,3 @@ pub async fn agent_exec(
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())
 }
-
-

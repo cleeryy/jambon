@@ -24,14 +24,12 @@
 
 use poise::serenity_prelude as serenity;
 use serenity::all::{
-    ButtonStyle, ComponentInteraction, CreateActionRow, CreateButton, CreateEmbed,
-    CreateInteractionResponse, CreateInteractionResponseMessage, EditInteractionResponse,
+    ButtonStyle, ComponentInteraction, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse,
+    CreateInteractionResponseMessage, EditInteractionResponse,
 };
 
-use jambon_proxmox_api::{
-    ClusterResource, NodeSummary, ProxmoxClient, StorageSummary, VmStatus, VmSummary,
-};
 use crate::{colors, Data, Error};
+use jambon_proxmox_api::{ClusterResource, NodeSummary, ProxmoxClient, StorageSummary, VmStatus, VmSummary};
 
 // ---------------------------------------------------------------------------
 // Public builders — return (CreateEmbed, Vec<CreateActionRow>) for command handlers
@@ -104,11 +102,7 @@ pub fn build_vm_list_embed(
 
     let embed = CreateEmbed::new()
         .title(format!("VMs on {node} — page {}/{}", page + 1, total_pages))
-        .description(if desc.is_empty() {
-            "No VMs found.".into()
-        } else {
-            desc
-        })
+        .description(if desc.is_empty() { "No VMs found.".into() } else { desc })
         .color(colors::COLOR_INFO);
 
     let mut components = action_rows;
@@ -116,11 +110,7 @@ pub fn build_vm_list_embed(
     (embed, components)
 }
 
-pub fn build_vm_detail_embed(
-    status: &VmStatus,
-    node: &str,
-    vmid: u64,
-) -> (CreateEmbed, Vec<CreateActionRow>) {
+pub fn build_vm_detail_embed(status: &VmStatus, node: &str, vmid: u64) -> (CreateEmbed, Vec<CreateActionRow>) {
     let color = match status.status.as_str() {
         "running" => colors::COLOR_SUCCESS,
         "stopped" => colors::COLOR_ERROR,
@@ -128,10 +118,7 @@ pub fn build_vm_detail_embed(
     };
 
     let embed = CreateEmbed::new()
-        .title(format!(
-            "VM {vmid} — {}",
-            status.name.as_deref().unwrap_or("unnamed"),
-        ))
+        .title(format!("VM {vmid} — {}", status.name.as_deref().unwrap_or("unnamed"),))
         .field("Status", &status.status, true)
         .field("Node", node, true)
         .field("CPU", format!("{:.1}%", status.cpu.unwrap_or(0.0) * 100.0), true)
@@ -144,11 +131,7 @@ pub fn build_vm_detail_embed(
             ),
             true,
         )
-        .field(
-            "Uptime",
-            format_uptime(status.uptime.unwrap_or(0)),
-            true,
-        )
+        .field("Uptime", format_uptime(status.uptime.unwrap_or(0)), true)
         .color(color);
 
     let mut buttons = Vec::new();
@@ -342,9 +325,7 @@ pub async fn handle_component(
     interaction
         .create_response(
             &ctx.http,
-            CreateInteractionResponse::Defer(
-                CreateInteractionResponseMessage::new(),
-            ),
+            CreateInteractionResponse::Defer(CreateInteractionResponseMessage::new()),
         )
         .await
         .map_err(|e| format!("failed to defer component interaction: {e}"))?;
@@ -359,6 +340,8 @@ pub async fn handle_component(
         handle_nav(ctx, interaction, data, rest).await?;
     } else if let Some(rest) = custom_id.strip_prefix("conf:") {
         handle_confirm(ctx, interaction, data, rest).await?;
+    } else if let Some(action) = custom_id.strip_prefix("menu:") {
+        handle_menu(ctx, interaction, data, action).await?;
     } else {
         tracing::warn!("unknown component interaction: {custom_id}");
     }
@@ -394,20 +377,28 @@ async fn handle_vm(
             let node = parts[3].to_string();
 
             match action {
-                "start" => {
-                    match proxmox.vm_start(&node, vmid).await {
-                        Ok(task) => {
-                            edit_response_simple(ctx, interaction, "✅ VM Started",
-                                &format!("VM **{vmid}** on **{node}** is starting.\nTask: `{}`", task.data),
-                                0x00ff00).await?;
-                        }
-                        Err(e) => {
-                            edit_response_simple(ctx, interaction, "❌ Error",
-                                &format!("Failed to start VM {vmid} on {node}:\n```{e}```"),
-                                0xff0000).await?;
-                        }
+                "start" => match proxmox.vm_start(&node, vmid).await {
+                    Ok(task) => {
+                        edit_response_simple(
+                            ctx,
+                            interaction,
+                            "✅ VM Started",
+                            &format!("VM **{vmid}** on **{node}** is starting.\nTask: `{}`", task.data),
+                            0x00ff00,
+                        )
+                        .await?;
                     }
-                }
+                    Err(e) => {
+                        edit_response_simple(
+                            ctx,
+                            interaction,
+                            "❌ Error",
+                            &format!("Failed to start VM {vmid} on {node}:\n```{e}```"),
+                            0xff0000,
+                        )
+                        .await?;
+                    }
+                },
                 "stop" => {
                     let confirm_id = format!("conf:vm:stop:{vmid}:{node}");
                     let cancel_id = format!("nav:back:vm:action:stop:{vmid}:{node}");
@@ -418,16 +409,14 @@ async fn handle_vm(
                              This is equivalent to pulling the power cord."
                         ))
                         .color(0xf39c12);
-                    let components = vec![
-                        CreateActionRow::Buttons(vec![
-                            CreateButton::new(&confirm_id)
-                                .label("✅ Confirm")
-                                .style(ButtonStyle::Danger),
-                            CreateButton::new(&cancel_id)
-                                .label("❌ Cancel")
-                                .style(ButtonStyle::Secondary),
-                        ]),
-                    ];
+                    let components = vec![CreateActionRow::Buttons(vec![
+                        CreateButton::new(&confirm_id)
+                            .label("✅ Confirm")
+                            .style(ButtonStyle::Danger),
+                        CreateButton::new(&cancel_id)
+                            .label("❌ Cancel")
+                            .style(ButtonStyle::Secondary),
+                    ])];
                     edit_response(ctx, interaction, embed, components).await?;
                 }
                 "shutdown" => {
@@ -435,20 +424,16 @@ async fn handle_vm(
                     let cancel_id = format!("nav:back:vm:action:shutdown:{vmid}:{node}");
                     let embed = CreateEmbed::new()
                         .title("⚠️ Confirm VM Shutdown")
-                        .description(format!(
-                            "Send ACPI shutdown signal to VM **{vmid}** on **{node}**?"
-                        ))
+                        .description(format!("Send ACPI shutdown signal to VM **{vmid}** on **{node}**?"))
                         .color(0xf39c12);
-                    let components = vec![
-                        CreateActionRow::Buttons(vec![
-                            CreateButton::new(&confirm_id)
-                                .label("✅ Confirm")
-                                .style(ButtonStyle::Danger),
-                            CreateButton::new(&cancel_id)
-                                .label("❌ Cancel")
-                                .style(ButtonStyle::Secondary),
-                        ]),
-                    ];
+                    let components = vec![CreateActionRow::Buttons(vec![
+                        CreateButton::new(&confirm_id)
+                            .label("✅ Confirm")
+                            .style(ButtonStyle::Danger),
+                        CreateButton::new(&cancel_id)
+                            .label("❌ Cancel")
+                            .style(ButtonStyle::Secondary),
+                    ])];
                     edit_response(ctx, interaction, embed, components).await?;
                 }
                 "detail" => {
@@ -733,14 +718,27 @@ async fn handle_confirm(
             let node = params[1];
             match proxmox.vm_stop(node, vmid).await {
                 Ok(task) => {
-                    edit_response_simple(ctx, interaction, "⏹ VM Stopped",
-                        &format!("VM **{vmid}** on **{node}** has been force-stopped.\nTask: `{}`", task.data),
-                        0xff0000).await?;
+                    edit_response_simple(
+                        ctx,
+                        interaction,
+                        "⏹ VM Stopped",
+                        &format!(
+                            "VM **{vmid}** on **{node}** has been force-stopped.\nTask: `{}`",
+                            task.data
+                        ),
+                        0xff0000,
+                    )
+                    .await?;
                 }
                 Err(e) => {
-                    edit_response_simple(ctx, interaction, "❌ Error",
+                    edit_response_simple(
+                        ctx,
+                        interaction,
+                        "❌ Error",
                         &format!("Failed to stop VM {vmid} on {node}:\n```{e}```"),
-                        0xff0000).await?;
+                        0xff0000,
+                    )
+                    .await?;
                 }
             }
         }
@@ -749,14 +747,24 @@ async fn handle_confirm(
             let node = params[1];
             match proxmox.vm_shutdown(node, vmid, None).await {
                 Ok(task) => {
-                    edit_response_simple(ctx, interaction, "⏻ VM Shutdown",
+                    edit_response_simple(
+                        ctx,
+                        interaction,
+                        "⏻ VM Shutdown",
                         &format!("VM **{vmid}** on **{node}** is shutting down.\nTask: `{}`", task.data),
-                        0xf39c12).await?;
+                        0xf39c12,
+                    )
+                    .await?;
                 }
                 Err(e) => {
-                    edit_response_simple(ctx, interaction, "❌ Error",
+                    edit_response_simple(
+                        ctx,
+                        interaction,
+                        "❌ Error",
                         &format!("Failed to shutdown VM {vmid} on {node}:\n```{e}```"),
-                        0xff0000).await?;
+                        0xff0000,
+                    )
+                    .await?;
                 }
             }
         }
@@ -765,6 +773,89 @@ async fn handle_confirm(
         }
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Menu
+// ---------------------------------------------------------------------------
+
+async fn handle_menu(
+    ctx: &serenity::Context,
+    interaction: &ComponentInteraction,
+    data: &Data,
+    action: &str,
+) -> Result<(), Error> {
+    let proxmox = &data.proxmox;
+    match action {
+        "vm" => {
+            // Pick the first online node and show its VMs.
+            let nodes = proxmox.cluster_status().await?;
+            let first_online = nodes.iter().find(|n| n.status.as_deref() == Some("online"));
+            if let Some(n) = first_online {
+                show_vm_page(ctx, interaction, proxmox, 0, &n.node).await?;
+            } else {
+                edit_response_simple(ctx, interaction, "No Nodes", "No online nodes found.", 0xff0000).await?;
+            }
+        }
+        "container" => {
+            let nodes = proxmox.cluster_status().await?;
+            let first_online = nodes.iter().find(|n| n.status.as_deref() == Some("online"));
+            if let Some(n) = first_online {
+                show_container_page(ctx, interaction, proxmox, 0, &n.node).await?;
+            } else {
+                edit_response_simple(ctx, interaction, "No Nodes", "No online nodes found.", 0xff0000).await?;
+            }
+        }
+        "storage" => {
+            show_storage_page(ctx, interaction, proxmox, 0).await?;
+        }
+        "cluster" => {
+            show_cluster_status_page(ctx, interaction, proxmox).await?;
+        }
+        "node" => {
+            show_cluster_status_page(ctx, interaction, proxmox).await?;
+        }
+        _ => {
+            tracing::warn!("unknown menu action: {action}");
+        }
+    }
+    Ok(())
+}
+
+async fn show_container_page(
+    ctx: &serenity::Context,
+    interaction: &ComponentInteraction,
+    proxmox: &ProxmoxClient,
+    _page: usize,
+    node: &str,
+) -> Result<(), Error> {
+    let containers = proxmox.list_containers(node).await?;
+    let total = containers.len();
+    let mut desc = String::new();
+    for ct in &containers {
+        let status_icon = match ct.status.as_str() {
+            "running" => "🟢",
+            "stopped" => "🔴",
+            _ => "⚪",
+        };
+        desc.push_str(&format!(
+            "{status_icon} **CT {vmid}** — {name} ({})\n",
+            ct.status,
+            vmid = ct.vmid,
+            name = ct.name.as_deref().unwrap_or("unnamed"),
+        ));
+    }
+    if desc.is_empty() {
+        desc = "No containers on this node.".into();
+    }
+    let embed = CreateEmbed::new()
+        .title(format!("Containers on {node} ({total})"))
+        .description(desc)
+        .color(colors::COLOR_INFO);
+    let close = CreateButton::new("nav:close")
+        .label("❌ Close")
+        .style(ButtonStyle::Danger);
+    edit_response(ctx, interaction, embed, vec![CreateActionRow::Buttons(vec![close])]).await
 }
 
 // ---------------------------------------------------------------------------
@@ -781,9 +872,7 @@ async fn edit_response(
     interaction
         .edit_response(
             &ctx.http,
-            EditInteractionResponse::new()
-                .embed(embed)
-                .components(components),
+            EditInteractionResponse::new().embed(embed).components(components),
         )
         .await
         .map_err(|e| format!("failed to edit interaction response: {e}"))?;
@@ -799,16 +888,11 @@ async fn edit_response_simple(
     description: &str,
     color: u32,
 ) -> Result<(), Error> {
-    let embed = CreateEmbed::new()
-        .title(title)
-        .description(description)
-        .color(color);
+    let embed = CreateEmbed::new().title(title).description(description).color(color);
     interaction
         .edit_response(
             &ctx.http,
-            EditInteractionResponse::new()
-                .embed(embed)
-                .components(vec![]),
+            EditInteractionResponse::new().embed(embed).components(vec![]),
         )
         .await
         .map_err(|e| format!("failed to edit interaction response: {e}"))?;

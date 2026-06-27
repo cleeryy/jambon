@@ -3,12 +3,14 @@
 pub mod acl;
 pub mod admin;
 pub mod audit;
+pub mod autocomplete;
 pub mod backup;
 pub mod cluster;
 pub mod colors;
 pub mod container;
 pub mod interactions;
 pub mod firewall;
+pub mod menu;
 pub mod node_utils;
 pub mod r#mod;
 pub mod node;
@@ -51,5 +53,6 @@ pub fn all_commands() -> Vec<poise::Command<Data, Error>> {
         schedule::autoscale(),
         admin::register(),
         admin::ping(),
+        menu::menu(),
     ]
 }
