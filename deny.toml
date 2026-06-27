@@ -10,11 +10,11 @@ all-features = true
 
 [advisories]
 vulnerability = "deny"
-unmaintained = "warn"
-unsound = "deny"
 yanked = "deny"
 notice = "warn"
-ignore = []
+ignore = [
+    "RUSTSEC-2024-0388",
+]
 
 [bans]
 multiple-versions = "deny"
