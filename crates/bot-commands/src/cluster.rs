@@ -23,7 +23,8 @@ pub async fn status(ctx: Context<'_>) -> Result<(), Error> {
     let nodes = ctx.data().proxmox.cluster_status().await?;
     let resources = ctx.data().proxmox.cluster_resources().await?;
     let (embed, components) = crate::interactions::build_cluster_status_embed(&nodes, &resources);
-    ctx.send(CreateReply::default().embed(embed).components(components)).await?;
+    ctx.send(CreateReply::default().embed(embed).components(components))
+        .await?;
     Ok(())
 }
 

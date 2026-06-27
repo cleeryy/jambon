@@ -261,7 +261,8 @@ impl ProxmoxClient {
 
     /// Suspend (hibernate) a VM.
     pub async fn vm_suspend(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
-        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/suspend")).await
+        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/suspend"))
+            .await
     }
 
     /// Convert a VM to a template.

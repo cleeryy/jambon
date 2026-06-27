@@ -14,8 +14,8 @@ pub use error::Error;
 pub use models::{
     AclEntry, AclUpdateOptions, AgentExecOptions, AgentExecResult, AgentInfo, AgentIpAddress, AgentNetworkInterface,
     ApiResponse, BackupJob, ClusterResource, FwLogEntry, FwRule, FwRuleOptions, LxcCloneOptions, LxcCreateOptions,
-    LxcResizeOptions, LxcShutdownOptions, LxcStatus, LxcSummary, NodeStatus, NodeSummary, PoolCreateOptions, PoolDetail, PoolMember,
-    PoolSummary, SnapshotCreateOptions, SnapshotListItem, StorageContent, StorageSummary, TaskResponse, TaskStatus,
-    UserCreateOptions, UserSummary, VersionInfo, VmCloneOptions, VmConfig, VmCreateOptions, VmResizeDiskOptions,
-    VmShutdownOptions, VmStatus, VmSummary,
+    LxcResizeOptions, LxcShutdownOptions, LxcStatus, LxcSummary, NodeStatus, NodeSummary, PoolCreateOptions,
+    PoolDetail, PoolMember, PoolSummary, SnapshotCreateOptions, SnapshotListItem, StorageContent, StorageSummary,
+    TaskResponse, TaskStatus, UserCreateOptions, UserSummary, VersionInfo, VmCloneOptions, VmConfig, VmCreateOptions,
+    VmResizeDiskOptions, VmShutdownOptions, VmStatus, VmSummary,
 };
