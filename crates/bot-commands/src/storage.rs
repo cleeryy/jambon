@@ -1,6 +1,7 @@
 use poise::serenity_prelude as serenity;
 use poise::CreateReply;
 
+use crate::autocomplete;
 use crate::{node_utils, Context, Error};
 
 /// Manage Proxmox VE storage pools
@@ -30,7 +31,12 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
 
 /// Show detailed status of a specific storage pool
 #[poise::command(slash_command)]
-pub async fn status(ctx: Context<'_>, #[description = "Storage pool name"] pool: String) -> Result<(), Error> {
+pub async fn status(
+    ctx: Context<'_>,
+    #[description = "Storage pool name"]
+    #[autocomplete = "autocomplete::autocomplete_storage"]
+    pool: String,
+) -> Result<(), Error> {
     ctx.defer().await?;
 
     let proxmox = &ctx.data().proxmox;

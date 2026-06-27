@@ -359,6 +359,8 @@ pub async fn handle_component(
         handle_nav(ctx, interaction, data, rest).await?;
     } else if let Some(rest) = custom_id.strip_prefix("conf:") {
         handle_confirm(ctx, interaction, data, rest).await?;
+    } else if let Some(action) = custom_id.strip_prefix("menu:") {
+        handle_menu(ctx, interaction, data, action).await?;
     } else {
         tracing::warn!("unknown component interaction: {custom_id}");
     }
@@ -765,6 +767,87 @@ async fn handle_confirm(
         }
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Menu
+// ---------------------------------------------------------------------------
+
+async fn handle_menu(
+    ctx: &serenity::Context,
+    interaction: &ComponentInteraction,
+    data: &Data,
+    action: &str,
+) -> Result<(), Error> {
+    let proxmox = &data.proxmox;
+    match action {
+        "vm" => {
+            // Pick the first online node and show its VMs.
+            let nodes = proxmox.cluster_status().await?;
+            let first_online = nodes.iter().find(|n| n.status.as_deref() == Some("online"));
+            if let Some(n) = first_online {
+                show_vm_page(ctx, interaction, proxmox, 0, &n.node).await?;
+            } else {
+                edit_response_simple(ctx, interaction, "No Nodes", "No online nodes found.", 0xff0000).await?;
+            }
+        }
+        "container" => {
+            let nodes = proxmox.cluster_status().await?;
+            let first_online = nodes.iter().find(|n| n.status.as_deref() == Some("online"));
+            if let Some(n) = first_online {
+                show_container_page(ctx, interaction, proxmox, 0, &n.node).await?;
+            } else {
+                edit_response_simple(ctx, interaction, "No Nodes", "No online nodes found.", 0xff0000).await?;
+            }
+        }
+        "storage" => {
+            show_storage_page(ctx, interaction, proxmox, 0).await?;
+        }
+        "cluster" => {
+            show_cluster_status_page(ctx, interaction, proxmox).await?;
+        }
+        "node" => {
+            show_cluster_status_page(ctx, interaction, proxmox).await?;
+        }
+        _ => {
+            tracing::warn!("unknown menu action: {action}");
+        }
+    }
+    Ok(())
+}
+
+async fn show_container_page(
+    ctx: &serenity::Context,
+    interaction: &ComponentInteraction,
+    proxmox: &ProxmoxClient,
+    _page: usize,
+    node: &str,
+) -> Result<(), Error> {
+    let containers = proxmox.list_containers(node).await?;
+    let total = containers.len();
+    let mut desc = String::new();
+    for ct in &containers {
+        let status_icon = match ct.status.as_str() {
+            "running" => "🟢",
+            "stopped" => "🔴",
+            _ => "⚪",
+        };
+        desc.push_str(&format!(
+            "{status_icon} **CT {vmid}** — {name} ({})\n",
+            ct.status,
+            vmid = ct.vmid,
+            name = ct.name.as_deref().unwrap_or("unnamed"),
+        ));
+    }
+    if desc.is_empty() {
+        desc = "No containers on this node.".into();
+    }
+    let embed = CreateEmbed::new()
+        .title(format!("Containers on {node} ({total})"))
+        .description(desc)
+        .color(colors::COLOR_INFO);
+    let close = CreateButton::new("nav:close").label("❌ Close").style(ButtonStyle::Danger);
+    edit_response(ctx, interaction, embed, vec![CreateActionRow::Buttons(vec![close])]).await
 }
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@ use poise::serenity_prelude as serenity;
 use poise::CreateReply;
 
 use crate::audit::AuditEntry;
+use crate::autocomplete;
 use crate::{Context, Error};
 
 fn audit_entry(user: &str, command: &str, details: String) -> AuditEntry {
@@ -60,19 +61,32 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
 
 /// Get detailed status of a specific node
 #[poise::command(slash_command)]
-pub async fn status(ctx: Context<'_>, #[description = "Node name"] node_name: String) -> Result<(), Error> {
+pub async fn status(
+    ctx: Context<'_>,
+    #[description = "Node name"]
+    #[autocomplete = "autocomplete::autocomplete_node"]
+    node: String,
+) -> Result<(), Error> {
     ctx.defer().await?;
 
-    let status = ctx.data().proxmox.node_status(&node_name).await?;
+    let node_summaries = ctx.data().proxmox.cluster_status().await?;
+    let node_online = node_summaries
+        .iter()
+        .find(|n| n.node == node)
+        .and_then(|n| n.status.as_deref())
+        == Some("online");
 
-    let color = if status.cpu > 0.9 {
-        crate::colors::COLOR_ERROR
-    } else {
+    let color = if node_online {
         crate::colors::COLOR_SUCCESS
+    } else {
+        crate::colors::COLOR_ERROR
     };
 
+    let status = ctx.data().proxmox.node_status(&node).await?;
+
     let embed = serenity::CreateEmbed::new()
-        .title(format!("Node: {node_name}"))
+        .title(format!("Node: {node}"))
+        .field("Status", if node_online { "🟢 online" } else { "🔴 offline" }, true)
         .field("CPU", format!("{:.1}%", status.cpu * 100.0), true)
         .field(
             "Memory",
