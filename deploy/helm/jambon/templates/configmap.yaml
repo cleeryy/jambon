@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "jambon.fullname" . }}-config
+  labels:
+    {{- include "jambon.labels" . | nindent 4 }}
+data:
+  RUST_LOG: {{ .Values.env.RUST_LOG | quote }}
+  PROXMOX_URL: {{ .Values.env.PROXMOX_URL | quote }}
+  DEV_GUILD_ID: {{ .Values.env.DEV_GUILD_ID | quote }}
+  ALERT_CHANNEL_ID: {{ .Values.env.ALERT_CHANNEL_ID | quote }}
+  MONITOR_INTERVAL_SECS: {{ .Values.env.MONITOR_INTERVAL_SECS | quote }}
+  ACCEPT_INVALID_CERTS: {{ .Values.env.ACCEPT_INVALID_CERTS | quote }}

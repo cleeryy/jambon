@@ -1,0 +1,15 @@
+[package]
+name = "jambon-bot-i18n"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Internationalization support for Jambon"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

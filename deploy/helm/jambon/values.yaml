@@ -1,0 +1,49 @@
+# Number of replicas to run
+replicaCount: 1
+
+# Image configuration
+image:
+  repository: ghcr.io/cleeryy/jambon
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# Kubernetes service account
+serviceAccount:
+  create: true
+  name: ""
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+# Probes (HTTP GET /metrics on port 9090)
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Environment variables (injected as ConfigMap — non-secret values only)
+env:
+  RUST_LOG: "info,jambon=debug"
+  PROXMOX_URL: "https://pve1:8006"
+  DEV_GUILD_ID: ""
+  ALERT_CHANNEL_ID: ""
+  MONITOR_INTERVAL_SECS: "60"
+  ACCEPT_INVALID_CERTS: "true"
+
+# Node selector, tolerations, affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
