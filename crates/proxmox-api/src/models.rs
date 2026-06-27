@@ -149,6 +149,284 @@ pub struct LxcSummary {
     pub lock: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct LxcStatus {
+    pub status: String,
+    pub vmid: u64,
+    pub name: Option<String>,
+    pub cpu: Option<f64>,
+    pub maxcpu: Option<u64>,
+    pub mem: Option<u64>,
+    pub maxmem: Option<u64>,
+    pub uptime: Option<u64>,
+    pub swap: Option<u64>,
+    pub maxswap: Option<u64>,
+    pub pid: Option<u64>,
+    pub cpus: Option<u64>,
+    pub lock: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LxcCreateOptions {
+    pub node: String,
+    pub vmid: u64,
+    pub ostemplate: String,
+    pub hostname: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cores: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memory: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub swap: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub net0: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rootfs: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub onboot: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nameserver: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub searchdomain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssh_public_keys: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "unprivileged")]
+    pub unprivileged: Option<u8>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LxcCloneOptions {
+    pub node: String,
+    pub vmid: u64,
+    pub newid: u64,
+    pub hostname: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LxcResizeOptions {
+    pub node: String,
+    pub vmid: u64,
+    pub disk: String,
+    pub size: String,
+}
+
+// ---------------------------------------------------------------------------
+// Pools
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+pub struct PoolSummary {
+    pub poolid: String,
+    pub comment: Option<String>,
+    pub members: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PoolDetail {
+    pub poolid: String,
+    pub comment: Option<String>,
+    pub members: Option<Vec<PoolMember>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PoolMember {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub node: Option<String>,
+    pub vmid: Option<u64>,
+    pub content: Option<String>,
+    pub storage: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PoolCreateOptions {
+    pub poolid: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
+}
+
+// ---------------------------------------------------------------------------
+// Users & ACL
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+pub struct UserSummary {
+    pub userid: String,
+    pub enable: Option<u8>,
+    pub email: Option<String>,
+    pub firstname: Option<String>,
+    pub lastname: Option<String>,
+    pub expire: Option<u64>,
+    pub comment: Option<String>,
+    pub keys: Option<String>,
+    pub tokens: Option<serde_json::Value>,
+    pub realm: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UserCreateOptions {
+    pub userid: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub firstname: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lastname: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expire: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AclEntry {
+    pub path: String,
+    pub roles: String,
+    pub users: Option<String>,
+    pub groups: Option<String>,
+    pub propagate: Option<u8>,
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
+    pub ugid: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AclUpdateOptions {
+    pub path: String,
+    pub roles: String,
+    pub users: Option<String>,
+    pub groups: Option<String>,
+    pub propagate: Option<u8>,
+    /// Set to 1 to remove the ACL entry.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delete: Option<u8>,
+}
+
+// ---------------------------------------------------------------------------
+// Firewall
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+pub struct FwRule {
+    pub pos: Option<u64>,
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
+    pub action: Option<String>,
+    pub proto: Option<String>,
+    pub source: Option<String>,
+    pub dest: Option<String>,
+    pub sport: Option<String>,
+    pub dport: Option<String>,
+    pub iface: Option<String>,
+    pub log: Option<String>,
+    pub comment: Option<String>,
+    pub enable: Option<u8>,
+    pub digest: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FwRuleOptions {
+    #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
+    pub kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proto: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dest: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sport: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dport: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub iface: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub log: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "pos")]
+    pub position: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FwLogEntry {
+    pub n: Option<u64>,
+    pub timestamp: Option<String>,
+    pub line: Option<String>,
+}
+
+// ---------------------------------------------------------------------------
+// QEMU Agent
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+pub struct AgentInfo {
+    pub supported: Option<bool>,
+    pub version: Option<String>,
+    pub command: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AgentNetworkInterface {
+    pub name: Option<String>,
+    pub hardware_address: Option<String>,
+    pub ip_addresses: Option<Vec<AgentIpAddress>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AgentIpAddress {
+    #[serde(rename = "ip-address")]
+    pub ip_address: Option<String>,
+    #[serde(rename = "ip-address-type")]
+    pub ip_address_type: Option<String>,
+    pub prefix: Option<u64>,
+    #[serde(rename = "is-loopback")]
+    pub is_loopback: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AgentExecResult {
+    pub pid: Option<u64>,
+    #[serde(rename = "out-data")]
+    pub out_data: Option<String>,
+    #[serde(rename = "err-data")]
+    pub err_data: Option<String>,
+    #[serde(rename = "exitcode")]
+    pub exit_code: Option<i64>,
+    #[serde(rename = "truncated")]
+    pub truncated: Option<bool>,
+    #[serde(rename = "out-truncated")]
+    pub out_truncated: Option<bool>,
+    #[serde(rename = "err-truncated")]
+    pub err_truncated: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AgentExecOptions {
+    pub command: Vec<String>,
+}
+
 // ---------------------------------------------------------------------------
 // Storage
 // ---------------------------------------------------------------------------

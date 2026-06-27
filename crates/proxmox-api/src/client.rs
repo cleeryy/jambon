@@ -113,7 +113,8 @@ impl ProxmoxClient {
 
     fn url(&self, path: &str) -> String {
         let path = path.trim_start_matches('/');
-        format!("{}/api2/json/{path}", self.base_url)
+        let base = self.base_url.trim_end_matches('/');
+        format!("{base}/api2/json/{path}")
     }
 
     async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T, Error> {
@@ -212,6 +213,21 @@ impl ProxmoxClient {
             .send()
             .await?;
         Self::handle_response(resp).await
+    }
+
+    // ── Cluster helpers ───────────────────────────────────────────────
+
+    /// Get the next available VM ID from the cluster.
+    /// GET /cluster/nextid
+    pub async fn cluster_next_vmid(&self) -> Result<u64, Error> {
+        #[derive(serde::Deserialize)]
+        struct NextIdResp {
+            data: String,
+        }
+        let resp: NextIdResp = self.get("cluster/nextid").await?;
+        resp.data
+            .parse()
+            .map_err(|e| Error::Config(format!("invalid next VMID: {e}")))
     }
 
     // ── VMs (QEMU) ───────────────────────────────────────────────────
@@ -336,12 +352,118 @@ impl ProxmoxClient {
         self.get(&format!("nodes/{node}/lxc")).await
     }
 
+    pub async fn container_status(&self, node: &str, vmid: u64) -> Result<LxcStatus, Error> {
+        self.get(&format!("nodes/{node}/lxc/{vmid}/status/current")).await
+    }
+
+    pub async fn container_create(&self, node: &str, opts: &LxcCreateOptions) -> Result<TaskResponse, Error> {
+        self.post(&format!("nodes/{node}/lxc"), opts).await
+    }
+
+    pub async fn container_delete(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
+        self.delete(&format!("nodes/{node}/lxc/{vmid}")).await
+    }
+
     pub async fn container_start(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
         self.post_empty(&format!("nodes/{node}/lxc/{vmid}/status/start")).await
     }
 
     pub async fn container_stop(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
         self.post_empty(&format!("nodes/{node}/lxc/{vmid}/status/stop")).await
+    }
+
+    pub async fn container_shutdown(&self, node: &str, vmid: u64, timeout: Option<u64>) -> Result<TaskResponse, Error> {
+        let mut body = serde_json::Map::new();
+        body.insert("node".into(), serde_json::Value::String(node.into()));
+        body.insert("vmid".into(), serde_json::Value::Number(vmid.into()));
+        if let Some(t) = timeout {
+            body.insert("timeout".into(), serde_json::Value::Number(t.into()));
+        }
+        self.post(
+            &format!("nodes/{node}/lxc/{vmid}/status/shutdown"),
+            serde_json::Value::Object(body),
+        )
+        .await
+    }
+
+    pub async fn container_clone(&self, node: &str, vmid: u64, opts: &LxcCloneOptions) -> Result<TaskResponse, Error> {
+        self.post(&format!("nodes/{node}/lxc/{vmid}/clone"), opts).await
+    }
+
+    pub async fn container_resize(
+        &self,
+        node: &str,
+        vmid: u64,
+        opts: &LxcResizeOptions,
+    ) -> Result<TaskResponse, Error> {
+        self.put(&format!("nodes/{node}/lxc/{vmid}/resize"), opts).await
+    }
+
+    // ── Pools ────────────────────────────────────────────────────────
+
+    pub async fn list_pools(&self) -> Result<Vec<PoolSummary>, Error> {
+        self.get("pools").await
+    }
+
+    pub async fn pool_status(&self, poolid: &str) -> Result<PoolDetail, Error> {
+        self.get(&format!("pools/{poolid}")).await
+    }
+
+    pub async fn pool_create(&self, opts: &PoolCreateOptions) -> Result<ApiResponse<String>, Error> {
+        self.post("pools", opts).await
+    }
+
+    // ── Users & ACL ──────────────────────────────────────────────────
+
+    pub async fn list_users(&self) -> Result<Vec<UserSummary>, Error> {
+        self.get("access/users").await
+    }
+
+    pub async fn user_create(&self, opts: &UserCreateOptions) -> Result<ApiResponse<String>, Error> {
+        self.post("access/users", opts).await
+    }
+
+    pub async fn list_acls(&self) -> Result<Vec<AclEntry>, Error> {
+        self.get("access/acl").await
+    }
+
+    pub async fn acl_update(&self, opts: &AclUpdateOptions) -> Result<ApiResponse<String>, Error> {
+        self.put("access/acl", opts).await
+    }
+
+    // ── Firewall ─────────────────────────────────────────────────────
+
+    pub async fn fw_rules(&self, node: &str, vmid: u64) -> Result<Vec<FwRule>, Error> {
+        self.get(&format!("nodes/{node}/qemu/{vmid}/firewall/rules")).await
+    }
+
+    pub async fn fw_add_rule(&self, node: &str, vmid: u64, opts: &FwRuleOptions) -> Result<TaskResponse, Error> {
+        self.post(&format!("nodes/{node}/qemu/{vmid}/firewall/rules"), opts)
+            .await
+    }
+
+    pub async fn fw_log(&self, node: &str, vmid: u64) -> Result<Vec<FwLogEntry>, Error> {
+        self.get(&format!("nodes/{node}/qemu/{vmid}/firewall/log")).await
+    }
+
+    // ── QEMU Agent ───────────────────────────────────────────────────
+
+    pub async fn vm_agent_info(&self, node: &str, vmid: u64) -> Result<AgentInfo, Error> {
+        self.get(&format!("nodes/{node}/qemu/{vmid}/agent/info")).await
+    }
+
+    pub async fn vm_agent_network(&self, node: &str, vmid: u64) -> Result<Vec<AgentNetworkInterface>, Error> {
+        self.get(&format!("nodes/{node}/qemu/{vmid}/agent/network-get-interfaces"))
+            .await
+    }
+
+    pub async fn vm_agent_exec(
+        &self,
+        node: &str,
+        vmid: u64,
+        opts: &AgentExecOptions,
+    ) -> Result<AgentExecResult, Error> {
+        self.post(&format!("nodes/{node}/qemu/{vmid}/agent/exec"), opts).await
     }
 
     // ── Storage ──────────────────────────────────────────────────────
@@ -393,5 +515,54 @@ impl ProxmoxClient {
 
     pub async fn task_status(&self, node: &str, upid: &str) -> Result<TaskStatus, Error> {
         self.get(&format!("nodes/{node}/tasks/{upid}/status")).await
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_url_construction() {
+        let client = ProxmoxClient::with_api_token("https://pve1:8006", "root@pam!test", "test-secret", true)
+            .expect("should build client");
+        assert_eq!(client.url("version"), "https://pve1:8006/api2/json/version");
+        assert_eq!(client.url("/version"), "https://pve1:8006/api2/json/version");
+        assert_eq!(
+            client.url("nodes/pve1/qemu"),
+            "https://pve1:8006/api2/json/nodes/pve1/qemu"
+        );
+    }
+
+    #[test]
+    fn test_url_with_trailing_slash_in_base() {
+        let client = ProxmoxClient::with_api_token("https://pve1:8006/", "root@pam!test", "test-secret", true)
+            .expect("should build client");
+        assert_eq!(client.url("version"), "https://pve1:8006/api2/json/version");
+    }
+
+    #[test]
+    fn test_with_api_token_sets_auth_header() {
+        let client = ProxmoxClient::with_api_token("https://pve1:8006", "root@pam!discord-bot", "uuid-secret", true)
+            .expect("should build client");
+        let expected = "PVEAPIToken=root@pam!discord-bot=uuid-secret";
+        assert_eq!(
+            client.auth_header,
+            HeaderValue::from_static(expected),
+            "auth header should be PVEAPIToken=<token_id>=<token_secret>"
+        );
+    }
+
+    #[test]
+    fn test_with_api_token_rejects_invalid_token() {
+        let result = ProxmoxClient::with_api_token("https://pve1:8006", "root@pam!test", "\0invalid", true);
+        assert!(result.is_err(), "token with null byte should fail");
+    }
+
+    #[test]
+    fn test_with_ticket_creates_empty_auth() {
+        let client = ProxmoxClient::with_ticket("https://pve1:8006", true).expect("should build ticket client");
+        assert_eq!(client.auth_header, HeaderValue::from_static(""));
     }
 }
