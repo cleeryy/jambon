@@ -7,6 +7,7 @@ pub mod backup;
 pub mod cluster;
 pub mod colors;
 pub mod container;
+pub mod interactions;
 pub mod firewall;
 pub mod node_utils;
 pub mod r#mod;

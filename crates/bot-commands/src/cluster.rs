@@ -21,30 +21,9 @@ pub async fn status(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
 
     let nodes = ctx.data().proxmox.cluster_status().await?;
-    let mut online = 0u64;
-    let mut total_vms = 0u64;
-
-    for n in &nodes {
-        if n.status.as_deref() == Some("online") {
-            online += 1;
-        }
-    }
-
     let resources = ctx.data().proxmox.cluster_resources().await?;
-    for r in &resources {
-        if r.kind == "qemu" && r.status.as_deref() == Some("running") {
-            total_vms += 1;
-        }
-    }
-
-    let embed = serenity::CreateEmbed::new()
-        .title("🌐 Proxmox Cluster Status")
-        .field("Nodes Online", format!("{online}/{}", nodes.len()), true)
-        .field("Running VMs", total_vms.to_string(), true)
-        .field("Total Resources", resources.len().to_string(), true)
-        .color(crate::colors::COLOR_INFO);
-
-    ctx.send(CreateReply::default().embed(embed)).await?;
+    let (embed, components) = crate::interactions::build_cluster_status_embed(&nodes, &resources);
+    ctx.send(CreateReply::default().embed(embed).components(components)).await?;
     Ok(())
 }
 
