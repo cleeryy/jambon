@@ -31,6 +31,9 @@ anyhow = "1"
 dotenvy = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 cron = "0.17.0"
+jambon-proxmox-api = { version = "0.1.0", path = "crates/proxmox-api" }
+jambon-bot-commands = { version = "0.1.0", path = "crates/bot-commands" }
+jambon-bot-core = { version = "0.1.0", path = "crates/bot-core" }
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
