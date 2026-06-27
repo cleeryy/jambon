@@ -9,10 +9,12 @@ description = "Discord slash command handlers for Jambon"
 
 [dependencies]
 poise.workspace = true
+tokio.workspace = true
 serenity.workspace = true
 tracing.workspace = true
 serde_json.workspace = true
 chrono.workspace = true
+cron.workspace = true
 jambon-proxmox-api = { path = "../proxmox-api" }
 
 [lints]

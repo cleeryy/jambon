@@ -29,6 +29,7 @@ thiserror = "2"
 anyhow = "1"
 dotenvy = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
+cron = "0.17.0"
 
 [workspace.lints.clippy]
 unwrap_used = "warn"

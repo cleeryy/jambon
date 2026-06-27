@@ -51,6 +51,8 @@ pub async fn build_framework(config: Config) -> Result<BotFramework, CoreError> 
                 }
 
                 // Wrap config into shared user data.
+
+                let scheduler = std::sync::Arc::new(jambon_bot_commands::scheduler::Scheduler::new());
                 let proxmox = jambon_proxmox_api::ProxmoxClient::with_api_token(
                     &config.proxmox_url,
                     &config.proxmox_token_id,
@@ -64,6 +66,7 @@ pub async fn build_framework(config: Config) -> Result<BotFramework, CoreError> 
                     monitor_interval_secs: config.monitor_interval_secs,
                     proxmox_url: config.proxmox_url.clone(),
                     audit_log: jambon_bot_commands::AuditLog::new(100),
+                    scheduler,
                 })
             })
         })
