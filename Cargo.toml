@@ -35,3 +35,6 @@ cron = "0.17.0"
 [workspace.lints.clippy]
 unwrap_used = "warn"
 expect_used = "warn"
+
+[patch.crates-io]
+rustls-webpki = { git = "https://github.com/rustls/webpki", tag = "v/0.103.13" }
