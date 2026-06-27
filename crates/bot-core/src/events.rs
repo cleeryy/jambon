@@ -10,26 +10,34 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 /// Handle Discord gateway events.
 pub async fn handle_event(
-    _ctx: &serenity::Context,
+    ctx: &serenity::Context,
     event: &poise::serenity_prelude::FullEvent,
     _framework: poise::FrameworkContext<'_, jambon_bot_commands::Data, Error>,
     data: &jambon_bot_commands::Data,
 ) -> Result<(), Error> {
-    if let serenity::FullEvent::Ready { .. } = event {
-        info!("Bot is ready! Logged in as {}", _ctx.cache.current_user().name);
+    match event {
+        serenity::FullEvent::Ready { .. } => {
+            info!("Bot is ready! Logged in as {}", ctx.cache.current_user().name);
 
-        let ctx = Arc::new(_ctx.clone());
-        let interval = tokio::time::Duration::from_secs(data.monitor_interval_secs);
-        let alert_channel = data.alert_channel_id.map(serenity::ChannelId::new);
-        let proxmox = data.proxmox.clone();
+            let ctx = Arc::new(ctx.clone());
+            let interval = tokio::time::Duration::from_secs(data.monitor_interval_secs);
+            let alert_channel = data.alert_channel_id.map(serenity::ChannelId::new);
+            let proxmox = data.proxmox.clone();
 
-        tokio::spawn(async move {
-            health_monitor_loop(ctx, interval, alert_channel, proxmox).await;
-        });
+            tokio::spawn(async move {
+                health_monitor_loop(ctx, interval, alert_channel, proxmox).await;
+            });
 
-        let scheduler = data.scheduler.clone();
-        let scheduler_proxmox = data.proxmox.clone();
-        scheduler.start(scheduler_proxmox);
+            let scheduler = data.scheduler.clone();
+            let scheduler_proxmox = data.proxmox.clone();
+            scheduler.start(scheduler_proxmox);
+        }
+        serenity::FullEvent::InteractionCreate { interaction } => {
+            if let serenity::Interaction::Component(component) = interaction {
+                let _ = jambon_bot_commands::interactions::handle_component(ctx, component, data).await;
+            }
+        }
+        _ => {}
     }
 
     Ok(())

@@ -21,39 +21,10 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
 
     let storages = ctx.data().proxmox.list_storage().await?;
-
-    let mut desc = String::new();
-    for s in &storages {
-        let status_icon = match s.status.as_deref() {
-            Some("available") => "🟢",
-            _ => "🔴",
-        };
-        let usage = s
-            .used_fraction
-            .map(|f| format!("{:.1}%", f * 100.0))
-            .unwrap_or_default();
-        let active = s
-            .active
-            .map(|a| if a == 1 { "active" } else { "inactive" })
-            .unwrap_or("?");
-        desc.push_str(&format!(
-            "{status_icon} **{name}** — {kind} | {content} | {usage} used | {active}\n",
-            name = s.storage,
-            kind = s.kind.as_deref().unwrap_or("?"),
-            content = s.content.as_deref().unwrap_or("?"),
-        ));
-    }
-
-    let embed = serenity::CreateEmbed::new()
-        .title("Storage Pools")
-        .description(if desc.is_empty() {
-            "No storage pools found.".into()
-        } else {
-            desc
-        })
-        .color(crate::colors::COLOR_INFO);
-
-    ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
+    const PAGE_SIZE: usize = 5;
+    let total_pages = (storages.len().max(1) - 1) / PAGE_SIZE + 1;
+    let (embed, components) = crate::interactions::build_storage_list_embed(&storages, 0, total_pages);
+    ctx.send(CreateReply::default().embed(embed).components(components).ephemeral(true)).await?;
     Ok(())
 }
 

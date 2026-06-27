@@ -36,44 +36,17 @@ pub async fn list(
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
-    let node_label = node.as_deref().unwrap_or("all nodes").to_string();
-
-    let vms = if let Some(ref node_name) = node {
-        ctx.data().proxmox.list_vms(node_name).await?
+    if let Some(ref node_name) = node {
+        let vms = ctx.data().proxmox.list_vms(node_name).await?;
+        const PAGE_SIZE: usize = 6;
+        let total_pages = (vms.len().max(1) - 1) / PAGE_SIZE + 1;
+        let (embed, components) = crate::interactions::build_vm_list_embed(&vms, 0, node_name, total_pages);
+        ctx.send(CreateReply::default().embed(embed).components(components).ephemeral(true)).await?;
     } else {
         let resources = ctx.data().proxmox.resources().vms().await?;
-        let mut all = Vec::new();
-        for r in &resources {
-            if let (Some(rnode), Some(vmid)) = (&r.node, r.vmid) {
-                if let Ok(vm) = ctx.data().proxmox.vm_status(rnode, vmid).await {
-                    all.push(vm);
-                }
-            }
-        }
         return show_cluster_vms(ctx, &resources).await;
-    };
-
-    let mut desc = String::new();
-    for vm in &vms {
-        let status_icon = match vm.status.as_str() {
-            "running" => "\u{1f7e2}",
-            "stopped" => "\u{1f534}",
-            _ => "\u{26aa}",
-        };
-        desc.push_str(&format!(
-            "{status_icon} **VM {vmid}** \u{2014} {} ({status})\n",
-            vm.name.as_deref().unwrap_or("unnamed"),
-            vmid = vm.vmid,
-            status = vm.status,
-        ));
     }
 
-    let embed = serenity::CreateEmbed::new()
-        .title(format!("VMs on {node_label}"))
-        .description(if desc.is_empty() { "No VMs found.".into() } else { desc })
-        .color(crate::colors::COLOR_INFO);
-
-    ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     Ok(())
 }
 
@@ -113,34 +86,8 @@ pub async fn status(
     ctx.defer().await?;
 
     let status = ctx.data().proxmox.vm_status(&node, vmid).await?;
-
-    let color = match status.status.as_str() {
-        "running" => crate::colors::COLOR_SUCCESS,
-        "stopped" => crate::colors::COLOR_ERROR,
-        _ => crate::colors::COLOR_WARNING,
-    };
-
-    let embed = serenity::CreateEmbed::new()
-        .title(format!(
-            "VM {vmid} \u{2014} {}",
-            status.name.as_deref().unwrap_or("unnamed")
-        ))
-        .field("Status", &status.status, true)
-        .field("Node", &node, true)
-        .field("CPU", format!("{:.1}%", status.cpu.unwrap_or(0.0) * 100.0), true)
-        .field(
-            "Memory",
-            format!(
-                "{:.1} GB / {:.1} GB",
-                status.mem.unwrap_or(0) as f64 / 1024.0 / 1024.0 / 1024.0,
-                status.maxmem.unwrap_or(0) as f64 / 1024.0 / 1024.0 / 1024.0,
-            ),
-            true,
-        )
-        .field("Uptime", format_uptime(status.uptime.unwrap_or(0)), true)
-        .color(color);
-
-    ctx.send(CreateReply::default().embed(embed)).await?;
+    let (embed, components) = crate::interactions::build_vm_detail_embed(&status, &node, vmid);
+    ctx.send(CreateReply::default().embed(embed).components(components)).await?;
     Ok(())
 }
 
@@ -702,51 +649,4 @@ pub async fn agent_exec(
     Ok(())
 }
 
-fn format_uptime(secs: u64) -> String {
-    let days = secs / 86400;
-    let hours = (secs % 86400) / 3600;
-    let minutes = (secs % 3600) / 60;
-    if days > 0 {
-        format!("{days}d {hours}h {minutes}m")
-    } else if hours > 0 {
-        format!("{hours}h {minutes}m")
-    } else {
-        format!("{minutes}m")
-    }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_format_uptime_days() {
-        assert_eq!(format_uptime(90061), "1d 1h 1m");
-    }
-
-    #[test]
-    fn test_format_uptime_hours_only() {
-        assert_eq!(format_uptime(3660), "1h 1m");
-    }
-
-    #[test]
-    fn test_format_uptime_minutes_only() {
-        assert_eq!(format_uptime(60), "1m");
-    }
-
-    #[test]
-    fn test_format_uptime_seconds_rounded_down() {
-        assert_eq!(format_uptime(59), "0m");
-        assert_eq!(format_uptime(0), "0m");
-    }
-
-    #[test]
-    fn test_format_uptime_exact_day() {
-        assert_eq!(format_uptime(86400), "1d 0h 0m");
-    }
-
-    #[test]
-    fn test_format_uptime_mixed_values() {
-        assert_eq!(format_uptime(100000), "1d 3h 46m");
-    }
-}
