@@ -125,9 +125,28 @@ pub struct VmStatus {
     pub pid: Option<u64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct TaskResponse {
-    pub data: String, // UPID
+    pub data: String,
+}
+
+/// Proxmox returns a raw UPID string for task-starting actions:
+/// `{"data": "UPID:pve1:..."}`. After handle_response strips the outer
+/// `{"data": ...}` envelope, our custom Deserialize builds the struct
+/// from the bare string.
+impl<'de> serde::Deserialize<'de> for TaskResponse {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer).map(|s| TaskResponse { data: s })
+    }
+}
+
+impl std::fmt::Display for TaskResponse {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.data.fmt(f)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -220,6 +239,14 @@ pub struct LxcResizeOptions {
     pub vmid: u64,
     pub disk: String,
     pub size: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LxcShutdownOptions {
+    pub node: String,
+    pub vmid: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeout: Option<u64>,
 }
 
 // ---------------------------------------------------------------------------

@@ -254,6 +254,21 @@ impl ProxmoxClient {
         self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/stop")).await
     }
 
+    /// Reset (force-restart) a VM.
+    pub async fn vm_reset(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
+        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/reset")).await
+    }
+
+    /// Suspend (hibernate) a VM.
+    pub async fn vm_suspend(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
+        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/status/suspend")).await
+    }
+
+    /// Convert a VM to a template.
+    pub async fn vm_template(&self, node: &str, vmid: u64) -> Result<TaskResponse, Error> {
+        self.post_empty(&format!("nodes/{node}/qemu/{vmid}/template")).await
+    }
+
     pub async fn vm_migrate(&self, node: &str, vmid: u64, target: &str) -> Result<TaskResponse, Error> {
         let opts = VmMigrateOptions {
             node: node.to_string(),
@@ -364,17 +379,13 @@ impl ProxmoxClient {
     }
 
     pub async fn container_shutdown(&self, node: &str, vmid: u64, timeout: Option<u64>) -> Result<TaskResponse, Error> {
-        let mut body = serde_json::Map::new();
-        body.insert("node".into(), serde_json::Value::String(node.into()));
-        body.insert("vmid".into(), serde_json::Value::Number(vmid.into()));
-        if let Some(t) = timeout {
-            body.insert("timeout".into(), serde_json::Value::Number(t.into()));
-        }
-        self.post(
-            &format!("nodes/{node}/lxc/{vmid}/status/shutdown"),
-            serde_json::Value::Object(body),
-        )
-        .await
+        let opts = LxcShutdownOptions {
+            node: node.to_string(),
+            vmid,
+            timeout,
+        };
+        self.post(&format!("nodes/{node}/lxc/{vmid}/status/shutdown"), opts)
+            .await
     }
 
     pub async fn container_clone(&self, node: &str, vmid: u64, opts: &LxcCloneOptions) -> Result<TaskResponse, Error> {
