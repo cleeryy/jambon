@@ -162,16 +162,12 @@ impl ProxmoxClient {
             };
         }
 
-        if status == reqwest::StatusCode::NO_CONTENT {
-            // Some delete/stop operations return 204 — nothing to parse.
-            // Return a default if T supports it, otherwise error.
-            // For now we just attempt to deserialize from empty body.
-            let body = resp.text().await.unwrap_or_default();
-            serde_json::from_str(&body).map_err(Error::Json)
-        } else {
-            let body = resp.text().await?;
-            serde_json::from_str(&body).map_err(Error::Json)
-        }
+        // Proxmox VE wraps all API responses in {"data": ...} envelope.
+        // We unwrap it here so every method gets the inner T directly.
+        let body = resp.text().await?;
+        serde_json::from_str::<ApiResponse<T>>(&body)
+            .map(|envelope| envelope.data)
+            .map_err(Error::Json)
     }
 
     // ── Cluster ──────────────────────────────────────────────────────
@@ -220,13 +216,8 @@ impl ProxmoxClient {
     /// Get the next available VM ID from the cluster.
     /// GET /cluster/nextid
     pub async fn cluster_next_vmid(&self) -> Result<u64, Error> {
-        #[derive(serde::Deserialize)]
-        struct NextIdResp {
-            data: String,
-        }
-        let resp: NextIdResp = self.get("cluster/nextid").await?;
-        resp.data
-            .parse()
+        let data: String = self.get("cluster/nextid").await?;
+        data.parse()
             .map_err(|e| Error::Config(format!("invalid next VMID: {e}")))
     }
 
@@ -409,7 +400,7 @@ impl ProxmoxClient {
         self.get(&format!("pools/{poolid}")).await
     }
 
-    pub async fn pool_create(&self, opts: &PoolCreateOptions) -> Result<ApiResponse<String>, Error> {
+    pub async fn pool_create(&self, opts: &PoolCreateOptions) -> Result<String, Error> {
         self.post("pools", opts).await
     }
 
@@ -419,7 +410,7 @@ impl ProxmoxClient {
         self.get("access/users").await
     }
 
-    pub async fn user_create(&self, opts: &UserCreateOptions) -> Result<ApiResponse<String>, Error> {
+    pub async fn user_create(&self, opts: &UserCreateOptions) -> Result<String, Error> {
         self.post("access/users", opts).await
     }
 
@@ -427,7 +418,7 @@ impl ProxmoxClient {
         self.get("access/acl").await
     }
 
-    pub async fn acl_update(&self, opts: &AclUpdateOptions) -> Result<ApiResponse<String>, Error> {
+    pub async fn acl_update(&self, opts: &AclUpdateOptions) -> Result<String, Error> {
         self.put("access/acl", opts).await
     }
 
