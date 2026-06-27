@@ -319,3 +319,34 @@ fn format_uptime(secs: u64) -> String {
         format!("{minutes}m")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_uptime_days() {
+        assert_eq!(format_uptime(90061), "1d 1h 1m");
+    }
+
+    #[test]
+    fn test_format_uptime_hours_only() {
+        assert_eq!(format_uptime(3660), "1h 1m");
+    }
+
+    #[test]
+    fn test_format_uptime_minutes_only() {
+        assert_eq!(format_uptime(60), "1m");
+    }
+
+    #[test]
+    fn test_format_uptime_seconds_rounded_down() {
+        assert_eq!(format_uptime(59), "0m");
+        assert_eq!(format_uptime(0), "0m");
+    }
+
+    #[test]
+    fn test_format_uptime_exact_day() {
+        assert_eq!(format_uptime(86400), "1d 0h 0m");
+    }
+}

@@ -5,6 +5,7 @@ members = [
     "crates/bot-commands",
     "crates/proxmox-api",
     "crates/bot-bin",
+    "crates/bot-i18n",
 ]
 default-members = ["crates/bot-bin"]
 

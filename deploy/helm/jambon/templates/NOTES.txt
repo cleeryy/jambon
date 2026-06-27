@@ -1,0 +1,22 @@
+Thank you for installing {{ .Chart.Name }} {{ .Chart.Version }}.
+
+To verify the deployment:
+
+  kubectl get pods -l app.kubernetes.io/name={{ include "jambon.name" . }}
+
+Before the bot can start, you must create a Kubernetes Secret with your
+Discord bot token and Proxmox credentials:
+
+  cat <<EOF | kubectl apply -f -
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: {{ include "jambon.fullname" . }}-secrets
+  type: Opaque
+  stringData:
+    DISCORD_TOKEN: "<your-discord-token>"
+    PROXMOX_TOKEN_ID: "root@pam!discord-bot"
+    PROXMOX_TOKEN_SECRET: "<your-token-secret>"
+  EOF
+
+For more information, see https://github.com/cleeryy/jambon

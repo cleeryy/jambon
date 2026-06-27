@@ -1,0 +1,18 @@
+apiVersion: v2
+name: jambon
+description: Jambon — A Discord bot to control Proxmox VE instances
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/cleeryy/jambon
+sources:
+  - https://github.com/cleeryy/jambon
+keywords:
+  - discord
+  - bot
+  - proxmox
+  - ve
+  - infrastructure
+maintainers:
+  - name: cleeryy
+    url: https://github.com/cleeryy

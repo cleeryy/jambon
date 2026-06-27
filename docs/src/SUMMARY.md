@@ -4,3 +4,5 @@
 - [Commands](commands.md)
 - [Architecture](architecture.md)
 - [Contributing](contributing.md)
+- [Admin Guide](admin/guide.md)
+- [Developer Guide](developer/contributing.md)
