@@ -19,9 +19,9 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 tracing-appender.workspace = true
 dotenvy.workspace = true
-jambon-bot-core = { path = "../bot-core" }
-jambon-bot-commands = { path = "../bot-commands" }
-jambon-proxmox-api = { path = "../proxmox-api" }
+jambon-bot-core.workspace = true
+jambon-bot-commands.workspace = true
+jambon-proxmox-api.workspace = true
 
 [lints]
 workspace = true

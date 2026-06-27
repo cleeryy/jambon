@@ -15,8 +15,8 @@ tracing.workspace = true
 thiserror.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-jambon-proxmox-api = { path = "../proxmox-api" }
-jambon-bot-commands = { path = "../bot-commands" }
+jambon-proxmox-api.workspace = true
+jambon-bot-commands.workspace = true
 
 [lints]
 workspace = true
