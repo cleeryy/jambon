@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
+use reqwest::header::{HeaderValue, AUTHORIZATION};
 use reqwest::Client as HttpClient;
 
 use crate::error::Error;
@@ -90,12 +90,11 @@ impl ProxmoxClient {
     }
 
     fn build_http(accept_invalid_certs: bool) -> Result<HttpClient, Error> {
-        let mut hb = HttpClient::builder()
+        let hb = HttpClient::builder()
             .danger_accept_invalid_certs(accept_invalid_certs)
             .timeout(std::time::Duration::from_secs(30));
-        let mut headers = HeaderMap::new();
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-        hb = hb.default_headers(headers);
+        // Content-Type is set automatically by .json() for POST/PUT — no
+        // default needed (would cause empty-body POST to send wrong headers).
         hb.build().map_err(Error::Http)
     }
 
@@ -145,6 +144,7 @@ impl ProxmoxClient {
             .http
             .post(self.url(path))
             .header(AUTHORIZATION, self.auth_header.clone())
+            .json(&serde_json::Value::Object(serde_json::Map::new()))
             .send()
             .await?;
 
