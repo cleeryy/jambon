@@ -173,7 +173,20 @@ impl ProxmoxClient {
     // ── Cluster ──────────────────────────────────────────────────────
 
     pub async fn cluster_status(&self) -> Result<Vec<NodeSummary>, Error> {
-        self.get("cluster/status").await
+        // The `/cluster/status` endpoint returns entries for the cluster
+        // itself *and* each node.  Cluster-level entries lack a `node`
+        // field, so we deserialise as untyped values first, then filter
+        // and re-deserialise only entries that have one.
+        let values: Vec<serde_json::Value> = self.get("cluster/status").await?;
+        let mut nodes = Vec::with_capacity(values.len());
+        for v in values {
+            if v.get("node").and_then(|n| n.as_str()).is_some() {
+                if let Ok(n) = serde_json::from_value(v) {
+                    nodes.push(n);
+                }
+            }
+        }
+        Ok(nodes)
     }
 
     pub async fn cluster_resources(&self) -> Result<Vec<ClusterResource>, Error> {
