@@ -1,7 +1,7 @@
 use poise::serenity_prelude as serenity;
 use poise::CreateReply;
 
-use crate::{Context, Error};
+use crate::{node_utils, Context, Error};
 
 /// Manage Proxmox VE storage pools
 #[poise::command(
@@ -62,12 +62,20 @@ pub async fn list(ctx: Context<'_>) -> Result<(), Error> {
 pub async fn status(ctx: Context<'_>, #[description = "Storage pool name"] pool: String) -> Result<(), Error> {
     ctx.defer().await?;
 
-    let nodes = ctx.data().proxmox.list_nodes().await?;
+    let proxmox = &ctx.data().proxmox;
+    let results = node_utils::try_for_each_node(proxmox, |node| {
+        let proxmox = proxmox.clone();
+        async move {
+            let storages = proxmox.node_storage(&node).await?;
+            Ok::<_, Error>(storages)
+        }
+    })
+    .await?;
+
     let mut desc = String::new();
 
-    for n in &nodes {
-        let storages = ctx.data().proxmox.node_storage(&n.node).await?;
-        if let Some(s) = storages.iter().find(|s| s.storage == pool) {
+    for (node, storages) in &results {
+        if let Some(s) = storages.iter().find(|s| s.storage == *pool) {
             let used_gb = s.used.unwrap_or(0) as f64 / 1024.0 / 1024.0 / 1024.0;
             let avail_gb = s.avail.unwrap_or(0) as f64 / 1024.0 / 1024.0 / 1024.0;
             let usage = s
@@ -80,13 +88,16 @@ pub async fn status(ctx: Context<'_>, #[description = "Storage pool name"] pool:
             };
             desc.push_str(&format!(
                 "{status_icon} **{node}**: {used_gb:.1} GB / {avail_gb:.1} GB ({usage})\n",
-                node = n.node,
             ));
         }
     }
 
     if desc.is_empty() {
-        desc = format!("Pool `{pool}` not found on any node.");
+        if results.is_empty() {
+            desc = "No reachable nodes in cluster.".into();
+        } else {
+            desc = format!("Pool `{pool}` not found on any reachable node.");
+        }
     }
 
     let embed = serenity::CreateEmbed::new()
