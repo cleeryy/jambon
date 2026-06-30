@@ -330,20 +330,47 @@ pub async fn handle_component(
         .await
         .map_err(|e| format!("failed to defer component interaction: {e}"))?;
 
-    if let Some(rest) = custom_id.strip_prefix("vm:") {
-        handle_vm(ctx, interaction, data, rest).await?;
-    } else if let Some(rest) = custom_id.strip_prefix("store:") {
-        handle_storage(ctx, interaction, data, rest).await?;
-    } else if let Some(rest) = custom_id.strip_prefix("clu:") {
-        handle_cluster(ctx, interaction, data, rest).await?;
-    } else if let Some(rest) = custom_id.strip_prefix("nav:") {
-        handle_nav(ctx, interaction, data, rest).await?;
-    } else if let Some(rest) = custom_id.strip_prefix("conf:") {
-        handle_confirm(ctx, interaction, data, rest).await?;
-    } else if let Some(action) = custom_id.strip_prefix("menu:") {
-        handle_menu(ctx, interaction, data, action).await?;
-    } else {
-        tracing::warn!("unknown component interaction: {custom_id}");
+    // Run the handler; if it fails, edit the deferred response with an
+    // error embed instead of leaving the interaction spinning forever.
+    let result = match custom_id.as_str() {
+        id if id.starts_with("vm:") => {
+            handle_vm(ctx, interaction, data, id.strip_prefix("vm:").unwrap_or_default()).await
+        }
+        id if id.starts_with("store:") => {
+            handle_storage(ctx, interaction, data, id.strip_prefix("store:").unwrap_or_default()).await
+        }
+        id if id.starts_with("clu:") => {
+            handle_cluster(ctx, interaction, data, id.strip_prefix("clu:").unwrap_or_default()).await
+        }
+        id if id.starts_with("nav:") => {
+            handle_nav(ctx, interaction, data, id.strip_prefix("nav:").unwrap_or_default()).await
+        }
+        id if id.starts_with("conf:") => {
+            handle_confirm(ctx, interaction, data, id.strip_prefix("conf:").unwrap_or_default()).await
+        }
+        id if id.starts_with("menu:") => {
+            handle_menu(ctx, interaction, data, id.strip_prefix("menu:").unwrap_or_default()).await
+        }
+        _ => {
+            tracing::warn!("unknown component interaction: {custom_id}");
+            Ok(())
+        }
+    };
+
+    if let Err(e) = result {
+        tracing::error!("component interaction handler failed: {e}");
+        // Edit the deferred response with an error embed so the user
+        // sees feedback instead of a permanently-spinning interaction.
+        let embed = CreateEmbed::new()
+            .title("❌ Error")
+            .description(format!("An error occurred while processing your request:\n```{e}```"))
+            .color(0xff0000);
+        let _ = interaction
+            .edit_response(
+                &ctx.http,
+                EditInteractionResponse::new().embed(embed).components(vec![]),
+            )
+            .await;
     }
 
     Ok(())

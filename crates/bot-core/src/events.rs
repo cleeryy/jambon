@@ -35,7 +35,9 @@ pub async fn handle_event(
         serenity::FullEvent::InteractionCreate {
             interaction: serenity::Interaction::Component(component),
         } => {
-            let _ = jambon_bot_commands::interactions::handle_component(ctx, component, data).await;
+            if let Err(e) = jambon_bot_commands::interactions::handle_component(ctx, component, data).await {
+                error!("Component interaction handler returned an error: {e}");
+            }
         }
         _ => {}
     }
