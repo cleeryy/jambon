@@ -31,14 +31,22 @@ pub async fn menu(ctx: Context<'_>) -> Result<(), Error> {
         .map(|r| r.iter().filter(|r| r.kind == "qemu").count())
         .unwrap_or(0);
     let running_vms = resources
-        .map(|r| r.iter().filter(|r| r.kind == "qemu" && r.status.as_deref() == Some("running")).count())
+        .map(|r| {
+            r.iter()
+                .filter(|r| r.kind == "qemu" && r.status.as_deref() == Some("running"))
+                .count()
+        })
         .unwrap_or(0);
 
     let total_cts = resources
         .map(|r| r.iter().filter(|r| r.kind == "lxc").count())
         .unwrap_or(0);
     let running_cts = resources
-        .map(|r| r.iter().filter(|r| r.kind == "lxc" && r.status.as_deref() == Some("running")).count())
+        .map(|r| {
+            r.iter()
+                .filter(|r| r.kind == "lxc" && r.status.as_deref() == Some("running"))
+                .count()
+        })
         .unwrap_or(0);
 
     let stor_avail = storages
@@ -47,26 +55,32 @@ pub async fn menu(ctx: Context<'_>) -> Result<(), Error> {
     let stor_total = storages.map(|s| s.len()).unwrap_or(0);
 
     // CPU — average of online nodes.
-    let cpu_pct = nodes.map(|n| {
-        let online_nodes: Vec<_> = n.iter().filter(|n| n.status.as_deref() == Some("online")).collect();
-        if online_nodes.is_empty() {
-            "?".into()
-        } else {
-            let sum: f64 = online_nodes.iter().filter_map(|n| n.cpu).sum();
-            format!("{:.1}%", sum / online_nodes.len() as f64 * 100.0)
-        }
-    }).unwrap_or_else(|| "?".into());
+    let cpu_pct = nodes
+        .map(|n| {
+            let online_nodes: Vec<_> = n.iter().filter(|n| n.status.as_deref() == Some("online")).collect();
+            if online_nodes.is_empty() {
+                "?".into()
+            } else {
+                let sum: f64 = online_nodes.iter().filter_map(|n| n.cpu).sum();
+                format!("{:.1}%", sum / online_nodes.len() as f64 * 100.0)
+            }
+        })
+        .unwrap_or_else(|| "?".into());
 
     // Memory — sum across nodes.
     let mem_used = nodes.map(|n| n.iter().filter_map(|n| n.mem).sum::<u64>()).unwrap_or(0);
-    let mem_max = nodes.map(|n| n.iter().filter_map(|n| n.maxmem).sum::<u64>()).unwrap_or(1);
+    let mem_max = nodes
+        .map(|n| n.iter().filter_map(|n| n.maxmem).sum::<u64>())
+        .unwrap_or(1);
     let mem_gb_used = mem_used as f64 / 1024.0 / 1024.0 / 1024.0;
     let mem_gb_max = mem_max as f64 / 1024.0 / 1024.0 / 1024.0;
     let mem_line = format!("{:.1} GB / {:.1} GB", mem_gb_used, mem_gb_max);
 
     // Disk — sum across nodes.
     let disk_used = nodes.map(|n| n.iter().filter_map(|n| n.disk).sum::<u64>()).unwrap_or(0);
-    let disk_max = nodes.map(|n| n.iter().filter_map(|n| n.maxdisk).sum::<u64>()).unwrap_or(1);
+    let disk_max = nodes
+        .map(|n| n.iter().filter_map(|n| n.maxdisk).sum::<u64>())
+        .unwrap_or(1);
     let disk_gb_used = disk_used as f64 / 1024.0 / 1024.0 / 1024.0;
     let disk_gb_max = disk_max as f64 / 1024.0 / 1024.0 / 1024.0;
     let disk_line = format!("{:.1} GB / {:.1} GB", disk_gb_used, disk_gb_max);
