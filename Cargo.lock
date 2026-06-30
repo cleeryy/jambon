@@ -874,7 +874,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jambon"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dotenvy",
  "jambon-bot-commands",
@@ -890,7 +890,7 @@ dependencies = [
 
 [[package]]
 name = "jambon-bot-commands"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "cron",
@@ -904,7 +904,7 @@ dependencies = [
 
 [[package]]
 name = "jambon-bot-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "jambon-bot-commands",
  "jambon-proxmox-api",
@@ -919,7 +919,7 @@ dependencies = [
 
 [[package]]
 name = "jambon-bot-i18n"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -927,7 +927,7 @@ dependencies = [
 
 [[package]]
 name = "jambon-proxmox-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "reqwest",

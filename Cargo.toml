@@ -10,7 +10,7 @@ members = [
 default-members = ["crates/bot-bin"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/cleeryy/jambon"
@@ -31,9 +31,9 @@ anyhow = "1"
 dotenvy = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 cron = "0.17.0"
-jambon-proxmox-api = { version = "0.1.0", path = "crates/proxmox-api" }
-jambon-bot-commands = { version = "0.1.0", path = "crates/bot-commands" }
-jambon-bot-core = { version = "0.1.0", path = "crates/bot-core" }
+jambon-proxmox-api = { version = "0.1.1", path = "crates/proxmox-api" }
+jambon-bot-commands = { version = "0.1.1", path = "crates/bot-commands" }
+jambon-bot-core = { version = "0.1.1", path = "crates/bot-core" }
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
